@@ -1,0 +1,182 @@
+name: Build Simple APK
+
+on:
+  push:
+    branches: [ main, master, develop ]
+  pull_request:
+    branches: [ main, master ]
+  workflow_dispatch:
+
+jobs:
+  build:
+    name: Build Marina Hotel APK
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout Code
+      uses: actions/checkout@v4
+
+    - name: Setup Java
+      uses: actions/setup-java@v4
+      with:
+        distribution: 'temurin'
+        java-version: '17'
+
+    - name: Setup Flutter
+      uses: subosito/flutter-action@v2
+      with:
+        flutter-version: '3.35.5'
+        channel: 'stable'
+
+    - name: Generate Signing Key
+      working-directory: ./mobile
+      run: |
+        echo "🔐 Generating Marina Hotel signing key..."
+        keytool -genkey -v \
+          -keystore android/app/marina-hotel-key.jks \
+          -keyalg RSA \
+          -keysize 2048 \
+          -validity 10000 \
+          -alias marina-hotel \
+          -dname "CN=Marina Hotel, OU=Mobile App, O=Marina Hotel, L=Sana'a, C=YE" \
+          -storepass marinahotel2024 \
+          -keypass marinahotel2024 \
+          -noprompt
+
+    - name: Create Key Properties
+      working-directory: ./mobile
+      run: |
+        echo "🔑 Creating key.properties..."
+        cat > android/key.properties << EOF
+        storePassword=marinahotel2024
+        keyPassword=marinahotel2024
+        keyAlias=marina-hotel
+        storeFile=marina-hotel-key.jks
+        EOF
+
+    - name: Get Dependencies
+      working-directory: ./mobile
+      run: flutter pub get
+
+    - name: Build Release APK
+      working-directory: ./mobile
+      run: |
+        echo "🚀 Building Marina Hotel APK..."
+        flutter build apk --release
+        echo "✅ APK built successfully!"
+
+    - name: Build Split APKs
+      working-directory: ./mobile
+      run: |
+        echo "🔄 Building split APKs..."
+        flutter build apk --release --split-per-abi
+        echo "✅ Split APKs built successfully!"
+
+    - name: Prepare APK Files
+      working-directory: ./mobile
+      run: |
+        echo "📦 Preparing APK files..."
+        mkdir -p ../apk-release
+        
+        # Get version and build info
+        VERSION=$(grep "version:" pubspec.yaml | cut -d' ' -f2 | cut -d'+' -f1)
+        BUILD=$GITHUB_RUN_NUMBER
+        DATE=$(date +%Y%m%d)
+        
+        # Copy APK files with descriptive names
+        if [ -f "build/app/outputs/flutter-apk/app-release.apk" ]; then
+          cp "build/app/outputs/flutter-apk/app-release.apk" "../apk-release/marina-hotel-v${VERSION}-universal-${DATE}.apk"
+          echo "✅ Universal APK ready"
+        fi
+        
+        if [ -f "build/app/outputs/flutter-apk/app-arm64-v8a-release.apk" ]; then
+          cp "build/app/outputs/flutter-apk/app-arm64-v8a-release.apk" "../apk-release/marina-hotel-v${VERSION}-arm64-${DATE}.apk"
+          echo "✅ ARM64 APK ready"
+        fi
+        
+        if [ -f "build/app/outputs/flutter-apk/app-armeabi-v7a-release.apk" ]; then
+          cp "build/app/outputs/flutter-apk/app-armeabi-v7a-release.apk" "../apk-release/marina-hotel-v${VERSION}-arm32-${DATE}.apk"
+          echo "✅ ARM32 APK ready"
+        fi
+        
+        if [ -f "build/app/outputs/flutter-apk/app-x86_64-release.apk" ]; then
+          cp "build/app/outputs/flutter-apk/app-x86_64-release.apk" "../apk-release/marina-hotel-v${VERSION}-x86_64-${DATE}.apk"
+          echo "✅ x86_64 APK ready"
+        fi
+
+    - name: Create Build Info
+      run: |
+        cd apk-release
+        echo "# 🏨 Marina Hotel APK Build" > BUILD_INFO.md
+        echo "" >> BUILD_INFO.md
+        echo "**تطبيق إدارة فندق مارينا - إصدار أندرويد**" >> BUILD_INFO.md
+        echo "" >> BUILD_INFO.md
+        echo "## 📱 معلومات البناء:" >> BUILD_INFO.md
+        echo "- **التاريخ:** $(date)" >> BUILD_INFO.md
+        echo "- **رقم البناء:** $GITHUB_RUN_NUMBER" >> BUILD_INFO.md
+        echo "- **الفرع:** $GITHUB_REF_NAME" >> BUILD_INFO.md
+        echo "- **Commit:** $GITHUB_SHA" >> BUILD_INFO.md
+        echo "" >> BUILD_INFO.md
+        echo "## 📥 ملفات APK:" >> BUILD_INFO.md
+        echo "" >> BUILD_INFO.md
+        for file in *.apk; do
+          if [ -f "$file" ]; then
+            SIZE=$(du -h "$file" | cut -f1)
+            echo "- **$file** ($SIZE)" >> BUILD_INFO.md
+          fi
+        done
+        echo "" >> BUILD_INFO.md
+        echo "## 🚀 المميزات:" >> BUILD_INFO.md
+        echo "- ✅ إدارة شاملة للفندق" >> BUILD_INFO.md
+        echo "- ✅ عمل بدون إنترنت" >> BUILD_INFO.md
+        echo "- ✅ مزامنة تلقائية" >> BUILD_INFO.md
+        echo "- ✅ واجهة عربية" >> BUILD_INFO.md
+        echo "- ✅ تقارير مفصلة" >> BUILD_INFO.md
+        echo "" >> BUILD_INFO.md
+        echo "## 📱 التثبيت:" >> BUILD_INFO.md
+        echo "1. حمل ملف APK المناسب لجهازك" >> BUILD_INFO.md
+        echo "2. فعّل 'مصادر غير معروفة' في الإعدادات" >> BUILD_INFO.md
+        echo "3. ثبت التطبيق" >> BUILD_INFO.md
+        echo "4. استمتع بإدارة فندقك! 🏨" >> BUILD_INFO.md
+
+    - name: Upload APK Files
+      uses: actions/upload-artifact@v4
+      with:
+        name: marina-hotel-apk-${{ github.run_number }}
+        path: apk-release/
+        retention-days: 30
+
+    - name: Create Release (on tag)
+      if: startsWith(github.ref, 'refs/tags/')
+      uses: softprops/action-gh-release@v1
+      with:
+        files: apk-release/*.apk
+        body_path: apk-release/BUILD_INFO.md
+        name: Marina Hotel ${{ github.ref_name }}
+        draft: false
+        prerelease: false
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+    - name: Build Summary
+      run: |
+        echo "## 🎉 Marina Hotel APK Build Complete!" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "### 📱 APK Files Built:" >> $GITHUB_STEP_SUMMARY
+        cd apk-release
+        for file in *.apk; do
+          if [ -f "$file" ]; then
+            SIZE=$(du -h "$file" | cut -f1)
+            echo "- **$file** ($SIZE)" >> $GITHUB_STEP_SUMMARY
+          fi
+        done
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "### 📥 Download:" >> $GITHUB_STEP_SUMMARY
+        echo "Check the **Artifacts** section above to download APK files." >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "### 🏨 Marina Hotel Features:" >> $GITHUB_STEP_SUMMARY
+        echo "- ✅ Complete hotel management" >> $GITHUB_STEP_SUMMARY
+        echo "- ✅ Offline functionality" >> $GITHUB_STEP_SUMMARY
+        echo "- ✅ Automatic sync" >> $GITHUB_STEP_SUMMARY
+        echo "- ✅ Arabic interface" >> $GITHUB_STEP_SUMMARY
+        echo "- ✅ Detailed reports" >> $GITHUB_STEP_SUMMARY
