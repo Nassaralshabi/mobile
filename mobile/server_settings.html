@@ -1,0 +1,660 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>إعدادات الخادم - فندق مارينا</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            direction: rtl;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 15px;
+            padding: 30px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+            padding-bottom: 20px;
+            border-bottom: 2px solid #f0f0f0;
+        }
+
+        .logo {
+            font-size: 2.5em;
+            color: #667eea;
+            margin-bottom: 10px;
+        }
+
+        .title {
+            font-size: 1.8em;
+            color: #333;
+            margin-bottom: 10px;
+        }
+
+        .subtitle {
+            color: #666;
+            font-size: 1.1em;
+        }
+
+        .settings-form {
+            display: grid;
+            gap: 20px;
+        }
+
+        .form-section {
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 20px;
+            border-right: 4px solid #667eea;
+        }
+
+        .section-title {
+            font-size: 1.3em;
+            font-weight: bold;
+            color: #333;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 500;
+            color: #555;
+        }
+
+        .form-group input,
+        .form-group select {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            font-size: 16px;
+            transition: border-color 0.3s ease;
+        }
+
+        .form-group input:focus,
+        .form-group select:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+        }
+
+        .checkbox-group {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin: 10px 0;
+        }
+
+        .checkbox-group input[type="checkbox"] {
+            width: auto;
+            transform: scale(1.2);
+        }
+
+        .btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            display: inline-block;
+            text-align: center;
+        }
+
+        .btn-primary {
+            background: #667eea;
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #5a6fd8;
+            transform: translateY(-2px);
+        }
+
+        .btn-success {
+            background: #28a745;
+            color: white;
+        }
+
+        .btn-success:hover {
+            background: #218838;
+        }
+
+        .btn-warning {
+            background: #ffc107;
+            color: #212529;
+        }
+
+        .btn-warning:hover {
+            background: #e0a800;
+        }
+
+        .btn-danger {
+            background: #dc3545;
+            color: white;
+        }
+
+        .btn-danger:hover {
+            background: #c82333;
+        }
+
+        .btn-group {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+            margin-top: 30px;
+        }
+
+        .status-indicator {
+            padding: 10px 15px;
+            border-radius: 8px;
+            margin: 15px 0;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .status-online {
+            background: #d4edda;
+            border: 1px solid #c3e6cb;
+            color: #155724;
+        }
+
+        .status-offline {
+            background: #f8d7da;
+            border: 1px solid #f5c6cb;
+            color: #721c24;
+        }
+
+        .status-testing {
+            background: #fff3cd;
+            border: 1px solid #ffeaa7;
+            color: #856404;
+        }
+
+        .examples {
+            background: #e3f2fd;
+            border-radius: 8px;
+            padding: 15px;
+            margin: 15px 0;
+        }
+
+        .examples h4 {
+            margin-bottom: 10px;
+            color: #1976d2;
+        }
+
+        .examples ul {
+            list-style: none;
+            padding-right: 20px;
+        }
+
+        .examples li {
+            margin: 5px 0;
+            color: #555;
+        }
+
+        .help-text {
+            font-size: 0.9em;
+            color: #666;
+            margin-top: 5px;
+        }
+
+        .icon {
+            font-size: 1.2em;
+        }
+
+        @media (max-width: 768px) {
+            .form-row {
+                grid-template-columns: 1fr;
+            }
+            
+            .btn-group {
+                flex-direction: column;
+            }
+            
+            .container {
+                padding: 20px;
+                margin: 10px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <div class="logo">🏨</div>
+            <div class="title">إعدادات الخادم</div>
+            <div class="subtitle">تكوين الاتصال مع خادم فندق مارينا</div>
+        </div>
+
+        <form class="settings-form" id="settingsForm">
+            <!-- إعدادات الخادم -->
+            <div class="form-section">
+                <div class="section-title">
+                    <span class="icon">🌐</span>
+                    إعدادات الخادم الأساسية
+                </div>
+                
+                <div class="form-group">
+                    <label for="serverUrl">رابط الخادم *</label>
+                    <input type="url" id="serverUrl" name="serverUrl" 
+                           placeholder="http://your-server.com/marina-hotel/api" required>
+                    <div class="help-text">أدخل الرابط الكامل لـ API الخاص بخادم فندق مارينا</div>
+                </div>
+
+                <div class="examples">
+                    <h4>أمثلة على الروابط:</h4>
+                    <ul>
+                        <li>• http://localhost/marina-hotel/api (للخادم المحلي)</li>
+                        <li>• http://192.168.1.100/marina-hotel/api (للشبكة المحلية)</li>
+                        <li>• https://your-domain.com/marina-hotel/api (للخادم العام)</li>
+                        <li>• http://your-ip:8080/marina-hotel/api (مع منفذ مخصص)</li>
+                    </ul>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="apiKey">مفتاح API (اختياري)</label>
+                        <input type="password" id="apiKey" name="apiKey" 
+                               placeholder="أدخل مفتاح API إذا كان مطلوباً">
+                    </div>
+                    <div class="form-group">
+                        <label for="timeout">مهلة الاتصال (ثانية)</label>
+                        <select id="timeout" name="timeout">
+                            <option value="5">5 ثوان</option>
+                            <option value="10" selected>10 ثوان</option>
+                            <option value="15">15 ثانية</option>
+                            <option value="30">30 ثانية</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="username">اسم المستخدم (اختياري)</label>
+                        <input type="text" id="username" name="username" 
+                               placeholder="اسم المستخدم للمصادقة">
+                    </div>
+                    <div class="form-group">
+                        <label for="password">كلمة المرور (اختياري)</label>
+                        <input type="password" id="password" name="password" 
+                               placeholder="كلمة المرور للمصادقة">
+                    </div>
+                </div>
+            </div>
+
+            <!-- إعدادات المزامنة -->
+            <div class="form-section">
+                <div class="section-title">
+                    <span class="icon">🔄</span>
+                    إعدادات المزامنة
+                </div>
+
+                <div class="checkbox-group">
+                    <input type="checkbox" id="autoSync" name="autoSync" checked>
+                    <label for="autoSync">تفعيل المزامنة التلقائية</label>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="syncInterval">فترة المزامنة</label>
+                        <select id="syncInterval" name="syncInterval">
+                            <option value="15">كل 15 ثانية</option>
+                            <option value="30" selected>كل 30 ثانية</option>
+                            <option value="60">كل دقيقة</option>
+                            <option value="120">كل دقيقتين</option>
+                            <option value="300">كل 5 دقائق</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="retryAttempts">عدد المحاولات</label>
+                        <select id="retryAttempts" name="retryAttempts">
+                            <option value="1">محاولة واحدة</option>
+                            <option value="3" selected>3 محاولات</option>
+                            <option value="5">5 محاولات</option>
+                            <option value="10">10 محاولات</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="checkbox-group">
+                    <input type="checkbox" id="wifiOnly" name="wifiOnly">
+                    <label for="wifiOnly">المزامنة عبر WiFi فقط</label>
+                </div>
+
+                <div class="checkbox-group">
+                    <input type="checkbox" id="offlineMode" name="offlineMode" checked>
+                    <label for="offlineMode">السماح بالعمل بدون إنترنت</label>
+                </div>
+            </div>
+
+            <!-- إعدادات التطبيق -->
+            <div class="form-section">
+                <div class="section-title">
+                    <span class="icon">⚙️</span>
+                    إعدادات التطبيق
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="language">اللغة</label>
+                        <select id="language" name="language">
+                            <option value="ar" selected>العربية</option>
+                            <option value="en">English</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="theme">المظهر</label>
+                        <select id="theme" name="theme">
+                            <option value="light" selected>فاتح</option>
+                            <option value="dark">داكن</option>
+                            <option value="auto">تلقائي</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="checkbox-group">
+                    <input type="checkbox" id="notifications" name="notifications" checked>
+                    <label for="notifications">تفعيل الإشعارات</label>
+                </div>
+
+                <div class="checkbox-group">
+                    <input type="checkbox" id="analytics" name="analytics">
+                    <label for="analytics">إرسال بيانات الاستخدام (مجهولة)</label>
+                </div>
+            </div>
+
+            <!-- حالة الاتصال -->
+            <div class="status-indicator status-offline" id="connectionStatus">
+                <span>🔴</span>
+                <span>غير متصل - اضغط "اختبار الاتصال" للتحقق</span>
+            </div>
+
+            <!-- أزرار العمليات -->
+            <div class="btn-group">
+                <button type="button" class="btn btn-primary" onclick="testConnection()">
+                    🔍 اختبار الاتصال
+                </button>
+                <button type="submit" class="btn btn-success">
+                    💾 حفظ الإعدادات
+                </button>
+                <button type="button" class="btn btn-warning" onclick="loadDefaults()">
+                    🔄 القيم الافتراضية
+                </button>
+                <button type="button" class="btn btn-danger" onclick="clearSettings()">
+                    🗑️ مسح الإعدادات
+                </button>
+            </div>
+        </form>
+    </div>
+
+    <script>
+        // تحميل الإعدادات المحفوظة عند تحميل الصفحة
+        window.addEventListener('load', loadSettings);
+
+        function loadSettings() {
+            const settings = JSON.parse(localStorage.getItem('marinaHotelSettings') || '{}');
+            
+            // تحميل القيم المحفوظة
+            document.getElementById('serverUrl').value = settings.serverUrl || 'http://localhost/marina-hotel/api';
+            document.getElementById('apiKey').value = settings.apiKey || '';
+            document.getElementById('username').value = settings.username || '';
+            document.getElementById('password').value = settings.password || '';
+            document.getElementById('timeout').value = settings.timeout || '10';
+            
+            document.getElementById('autoSync').checked = settings.autoSync !== false;
+            document.getElementById('syncInterval').value = settings.syncInterval || '30';
+            document.getElementById('retryAttempts').value = settings.retryAttempts || '3';
+            document.getElementById('wifiOnly').checked = settings.wifiOnly || false;
+            document.getElementById('offlineMode').checked = settings.offlineMode !== false;
+            
+            document.getElementById('language').value = settings.language || 'ar';
+            document.getElementById('theme').value = settings.theme || 'light';
+            document.getElementById('notifications').checked = settings.notifications !== false;
+            document.getElementById('analytics').checked = settings.analytics || false;
+        }
+
+        function saveSettings() {
+            const settings = {
+                serverUrl: document.getElementById('serverUrl').value,
+                apiKey: document.getElementById('apiKey').value,
+                username: document.getElementById('username').value,
+                password: document.getElementById('password').value,
+                timeout: document.getElementById('timeout').value,
+                
+                autoSync: document.getElementById('autoSync').checked,
+                syncInterval: document.getElementById('syncInterval').value,
+                retryAttempts: document.getElementById('retryAttempts').value,
+                wifiOnly: document.getElementById('wifiOnly').checked,
+                offlineMode: document.getElementById('offlineMode').checked,
+                
+                language: document.getElementById('language').value,
+                theme: document.getElementById('theme').value,
+                notifications: document.getElementById('notifications').checked,
+                analytics: document.getElementById('analytics').checked,
+                
+                lastUpdated: new Date().toISOString()
+            };
+
+            localStorage.setItem('marinaHotelSettings', JSON.stringify(settings));
+            
+            // إظهار رسالة نجاح
+            showNotification('تم حفظ الإعدادات بنجاح! ✅', 'success');
+        }
+
+        async function testConnection() {
+            const serverUrl = document.getElementById('serverUrl').value;
+            if (!serverUrl) {
+                showNotification('يرجى إدخال رابط الخادم أولاً', 'error');
+                return;
+            }
+
+            const statusEl = document.getElementById('connectionStatus');
+            statusEl.className = 'status-indicator status-testing';
+            statusEl.innerHTML = '<span>🟡</span><span>جاري اختبار الاتصال...</span>';
+
+            try {
+                // تحديد رابط الاختبار
+                let testUrl;
+                if (serverUrl.includes('localhost') || serverUrl.includes('127.0.0.1')) {
+                    // للخادم المحلي، استخدم test_local.php
+                    testUrl = serverUrl.endsWith('/') ? `${serverUrl}test_local.php` : `${serverUrl}/test_local.php`;
+                } else {
+                    // للخوادم الخارجية، استخدم test.php العادي
+                    testUrl = serverUrl.endsWith('/') ? `${serverUrl}test.php` : `${serverUrl}/test.php`;
+                }
+                
+                const timeout = parseInt(document.getElementById('timeout').value) * 1000;
+                const controller = new AbortController();
+                const timeoutId = setTimeout(() => controller.abort(), timeout);
+
+                // إعداد الطلب
+                const requestOptions = {
+                    method: 'GET',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json'
+                    },
+                    signal: controller.signal,
+                    mode: 'cors' // تمكين CORS
+                };
+
+                // إضافة مفتاح API إذا كان متوفراً
+                const apiKey = document.getElementById('apiKey').value;
+                if (apiKey) {
+                    requestOptions.headers['Authorization'] = `Bearer ${apiKey}`;
+                }
+
+                console.log('Testing connection to:', testUrl);
+                const response = await fetch(testUrl, requestOptions);
+                clearTimeout(timeoutId);
+
+                if (response.ok) {
+                    const data = await response.json();
+                    statusEl.className = 'status-indicator status-online';
+                    statusEl.innerHTML = '<span>🟢</span><span>متصل بنجاح! الخادم يعمل بشكل طبيعي</span>';
+                    
+                    // عرض معلومات إضافية إذا كانت متوفرة
+                    let successMessage = 'تم الاتصال بالخادم بنجاح! 🎉';
+                    if (data.server_info) {
+                        successMessage += `\nإصدار PHP: ${data.server_info.php_version}`;
+                        successMessage += `\nوقت الخادم: ${data.server_info.server_time}`;
+                    }
+                    showNotification(successMessage, 'success');
+                } else {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+            } catch (error) {
+                statusEl.className = 'status-indicator status-offline';
+                
+                let errorMessage = '';
+                let helpMessage = '';
+                
+                if (error.name === 'AbortError') {
+                    errorMessage = 'انتهت مهلة الاتصال';
+                    helpMessage = 'تحقق من الرابط والشبكة، أو زد مهلة الاتصال';
+                } else if (error.message.includes('Failed to fetch')) {
+                    errorMessage = 'فشل في الوصول للخادم';
+                    helpMessage = 'تأكد من:\n• تشغيل XAMPP أو الخادم\n• صحة الرابط\n• عدم وجود حاجز ناري';
+                } else if (error.message.includes('CORS')) {
+                    errorMessage = 'مشكلة في إعدادات CORS';
+                    helpMessage = 'تحقق من إعدادات CORS على الخادم';
+                } else {
+                    errorMessage = `فشل الاتصال: ${error.message}`;
+                    helpMessage = 'راجع إعدادات الخادم والشبكة';
+                }
+                
+                statusEl.innerHTML = `<span>🔴</span><span>${errorMessage}</span>`;
+                showNotification(`${errorMessage}\n\n${helpMessage}`, 'error');
+                
+                console.error('Connection test failed:', error);
+            }
+        }
+
+        function loadDefaults() {
+            if (confirm('هل تريد استعادة الإعدادات الافتراضية؟ سيتم فقدان الإعدادات الحالية.')) {
+                localStorage.removeItem('marinaHotelSettings');
+                loadSettings();
+                showNotification('تم استعادة الإعدادات الافتراضية', 'success');
+            }
+        }
+
+        function clearSettings() {
+            if (confirm('هل تريد مسح جميع الإعدادات؟ لن يمكن التراجع عن هذا الإجراء.')) {
+                localStorage.removeItem('marinaHotelSettings');
+                document.getElementById('settingsForm').reset();
+                document.getElementById('connectionStatus').className = 'status-indicator status-offline';
+                document.getElementById('connectionStatus').innerHTML = '<span>🔴</span><span>تم مسح الإعدادات</span>';
+                showNotification('تم مسح جميع الإعدادات', 'success');
+            }
+        }
+
+        function showNotification(message, type = 'info') {
+            // إنشاء عنصر الإشعار
+            const notification = document.createElement('div');
+            notification.style.cssText = `
+                position: fixed;
+                top: 20px;
+                right: 20px;
+                padding: 15px 20px;
+                border-radius: 8px;
+                color: white;
+                font-weight: 500;
+                z-index: 1000;
+                animation: slideIn 0.3s ease;
+                max-width: 300px;
+                box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+            `;
+
+            // تحديد لون الإشعار حسب النوع
+            switch (type) {
+                case 'success':
+                    notification.style.backgroundColor = '#28a745';
+                    break;
+                case 'error':
+                    notification.style.backgroundColor = '#dc3545';
+                    break;
+                case 'warning':
+                    notification.style.backgroundColor = '#ffc107';
+                    notification.style.color = '#212529';
+                    break;
+                default:
+                    notification.style.backgroundColor = '#17a2b8';
+            }
+
+            notification.textContent = message;
+            document.body.appendChild(notification);
+
+            // إزالة الإشعار بعد 4 ثوان
+            setTimeout(() => {
+                notification.style.animation = 'slideOut 0.3s ease';
+                setTimeout(() => {
+                    if (notification.parentNode) {
+                        notification.parentNode.removeChild(notification);
+                    }
+                }, 300);
+            }, 4000);
+        }
+
+        // معالج إرسال النموذج
+        document.getElementById('settingsForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            saveSettings();
+        });
+
+        // إضافة CSS للرسوم المتحركة
+        const style = document.createElement('style');
+        style.textContent = `
+            @keyframes slideIn {
+                from { transform: translateX(100%); opacity: 0; }
+                to { transform: translateX(0); opacity: 1; }
+            }
+            @keyframes slideOut {
+                from { transform: translateX(0); opacity: 1; }
+                to { transform: translateX(100%); opacity: 0; }
+            }
+        `;
+        document.head.appendChild(style);
+
+        // تحديث حالة الاتصال عند تغيير رابط الخادم
+        document.getElementById('serverUrl').addEventListener('input', function() {
+            const statusEl = document.getElementById('connectionStatus');
+            statusEl.className = 'status-indicator status-offline';
+            statusEl.innerHTML = '<span>🔴</span><span>غير متصل - اضغط "اختبار الاتصال" للتحقق</span>';
+        });
+    </script>
+</body>
+</html>
