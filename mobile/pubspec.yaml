@@ -4,7 +4,7 @@ description: Marina Hotel Mobile App
 version: 1.0.0+1
 
 environment:
-  sdk: '>=3.35.5 <4.0.0'
+  sdk: '>=3.0.0 <5.0.0'
   flutter: '>=3.35.5'
 
 dependencies:
