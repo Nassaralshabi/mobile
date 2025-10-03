@@ -13,6 +13,7 @@ on:
     branches: [ "main", "master" ]
     paths:
       - 'mobile/**'
+  workflow_dispatch:
 
 env:
   FLUTTER_VERSION: '3.24.0'
