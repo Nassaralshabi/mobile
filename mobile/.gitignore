@@ -1,0 +1,150 @@
+# Miscellaneous
+*.class
+*.log
+*.pyc
+*.swp
+.DS_Store
+.atom/
+.buildlog/
+.history
+.svn/
+migrate_working_dir/
+
+# IntelliJ related
+*.iml
+*.ipr
+*.iws
+.idea/
+
+# The .vscode folder contains launch configuration and tasks you configure in
+# VS Code which you may wish to be included in version control, so this line
+# is commented out by default.
+#.vscode/
+
+# Flutter/Dart/Pub related
+**/doc/api/
+**/ios/Flutter/.last_build_id
+.dart_tool/
+.flutter-plugins
+.flutter-plugins-dependencies
+.packages
+.pub-cache/
+.pub/
+/build/
+
+# Symbolication related
+app.*.symbols
+
+# Obfuscation related
+app.*.map.json
+
+# Android Studio will place build artifacts here
+/android/app/debug
+/android/app/profile
+/android/app/release
+
+# ==============================================
+# 🔐 SECURITY: Keystore and signing files
+# ==============================================
+# NEVER commit these files - they contain sensitive information!
+
+# Keystore files
+*.jks
+*.keystore
+*.p12
+*.pfx
+
+# Key properties
+key.properties
+android/key.properties
+android/app/key.properties
+**/android/key.properties
+
+# Keys directory
+keys/
+**/keys/
+
+# Upload keystore (Google Play)
+upload-keystore.jks
+app-signing.jks
+
+# Firebase and Google Services
+google-services.json
+GoogleService-Info.plist
+
+# Environment variables
+.env
+.env.local
+.env.*.local
+
+# ==============================================
+# Local build files
+# ==============================================
+# APK and AAB outputs (for local builds)
+*.apk
+*.aab
+*.ipa
+
+# Local properties
+local.properties
+
+# Temporary build files
+*.temp
+*.tmp
+*~
+
+# Coverage
+coverage/
+*.lcov
+
+# Test outputs
+test_driver/
+integration_test/
+screenshots/
+
+# Generated files
+*.g.dart
+*.freezed.dart
+*.config.dart
+
+# Database files (if any)
+*.db
+*.sqlite
+*.sqlite3
+
+# Logs
+logs/
+*.log
+
+# Backup files
+*.backup
+*.bak
+*~
+
+# IDE and editor files
+.vscode/
+.idea/
+*.sublime-project
+*.sublime-workspace
+
+# ==============================================
+# Marina Hotel specific
+# ==============================================
+# Development keystores
+marina-hotel-dev.jks
+marina-hotel-test.jks
+marina-hotel-key.jks
+marina-hotel-release.jks
+
+# Encoded keystores
+*.base64.txt
+keystore.base64.txt
+
+# Signing scripts output
+signing_output/
+release_output/
+apk_output/
+
+# Server settings (if containing sensitive data)
+# Uncomment if needed:
+# server_settings.html
