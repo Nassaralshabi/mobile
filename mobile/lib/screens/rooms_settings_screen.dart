@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import '../services/database_service.dart';
-import '../services/offline_api_service.dart';
 
 class RoomsSettingsScreen extends StatefulWidget {
   const RoomsSettingsScreen({super.key});
@@ -11,7 +10,6 @@ class RoomsSettingsScreen extends StatefulWidget {
 
 class _RoomsSettingsScreenState extends State<RoomsSettingsScreen> {
   final DatabaseService _dbService = DatabaseService();
-  final OfflineApiService _apiService = OfflineApiService();
   
   List<Map<String, dynamic>> _rooms = [];
   bool _isLoading = false;

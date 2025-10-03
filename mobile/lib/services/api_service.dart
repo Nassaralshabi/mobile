@@ -290,4 +290,55 @@ class ApiService {
       return [];
     }
   }
+
+  Future<List<Map<String, dynamic>>> getSuppliers() async {
+    try {
+      final response = await http.get(
+        Uri.parse('$baseUrl/suppliers.php'),
+        headers: _authService.getAuthHeaders(),
+      );
+
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        return List<Map<String, dynamic>>.from(data['suppliers'] ?? []);
+      }
+      return [];
+    } catch (e) {
+      print('Error fetching suppliers: $e');
+      return [];
+    }
+  }
+
+  Future<List<Map<String, dynamic>>> getSalaryWithdrawals() async {
+    try {
+      final response = await http.get(
+        Uri.parse('$baseUrl/salary_withdrawals.php'),
+        headers: _authService.getAuthHeaders(),
+      );
+
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        return List<Map<String, dynamic>>.from(data['withdrawals'] ?? []);
+      }
+      return [];
+    } catch (e) {
+      print('Error fetching salary withdrawals: $e');
+      return [];
+    }
+  }
+
+  Future<bool> addSalaryWithdrawal(Map<String, dynamic> withdrawalData) async {
+    try {
+      final response = await http.post(
+        Uri.parse('$baseUrl/salary_withdrawals.php'),
+        headers: _authService.getAuthHeaders(),
+        body: json.encode(withdrawalData),
+      );
+
+      return response.statusCode == 200;
+    } catch (e) {
+      print('Error adding salary withdrawal: $e');
+      return false;
+    }
+  }
 }

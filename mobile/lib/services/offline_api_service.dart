@@ -1,17 +1,21 @@
-import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'database_service.dart';
 import 'connectivity_service.dart';
 import 'api_service.dart';
+import 'auth_service.dart';
 
 class OfflineApiService {
   static final OfflineApiService _instance = OfflineApiService._internal();
   factory OfflineApiService() => _instance;
-  OfflineApiService._internal();
 
   final DatabaseService _dbService = DatabaseService();
   final ConnectivityService _connectivityService = ConnectivityService();
-  final ApiService _apiService = ApiService();
+  final AuthService _authService = AuthService();
+  late final ApiService _apiService;
+
+  OfflineApiService._internal() {
+    _apiService = ApiService(_authService);
+  }
 
   // Bookings
   Future<List<Map<String, dynamic>>> getBookings() async {

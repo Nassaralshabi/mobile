@@ -3,7 +3,6 @@ import 'package:provider/provider.dart';
 import '../services/auth_service.dart';
 import '../services/api_service.dart';
 import '../services/connectivity_service.dart';
-import '../services/offline_api_service.dart';
 import 'bookings_screen.dart';
 import 'rooms_screen.dart';
 import 'sync_status_screen.dart';
@@ -120,7 +119,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
           ),
           IconButton(
             icon: const Icon(Icons.logout),
-            onPressed: () => _logout(context),
+            onPressed: _logout,
           ),
           PopupMenuButton<String>(
             onSelected: (value) {
