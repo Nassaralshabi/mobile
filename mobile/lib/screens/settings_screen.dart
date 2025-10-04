@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../services/connectivity_service.dart';
-import '../services/offline_api_service.dart';
 import '../services/database_service.dart';
 import 'sync_status_screen.dart';
 import 'data_management_screen.dart';

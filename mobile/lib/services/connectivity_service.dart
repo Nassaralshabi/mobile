@@ -19,7 +19,7 @@ class ConnectivityService extends ChangeNotifier {
   String _syncStatus = 'غير متصل';
   DateTime? _lastSyncTime;
   
-  StreamSubscription<List<ConnectivityResult>>? _connectivitySubscription;
+  StreamSubscription<ConnectivityResult>? _connectivitySubscription;
   Timer? _syncTimer;
 
   bool get isOnline => _isOnline;
@@ -28,12 +28,14 @@ class ConnectivityService extends ChangeNotifier {
   DateTime? get lastSyncTime => _lastSyncTime;
 
   Future<void> initialize() async {
-    // فحص الاتصال الأولي
-    await _checkConnectivity();
-    
-    // مراقبة تغييرات الاتصال
-    _connectivitySubscription = _connectivity.onConnectivityChanged.listen(_onConnectivityChanged);
-    
+    final initialStatus = await _connectivity.checkConnectivity();
+    await _handleConnectivity(initialStatus);
+
+    _connectivitySubscription =
+        _connectivity.onConnectivityChanged.listen((result) async {
+      await _handleConnectivity(result);
+    });
+
     // تشغيل مزامنة دورية كل 30 ثانية عند توفر الإنترنت
     _syncTimer = Timer.periodic(const Duration(seconds: 30), (timer) {
       if (_isOnline && !_isSyncing) {
@@ -48,21 +50,18 @@ class ConnectivityService extends ChangeNotifier {
     }
   }
 
-  Future<void> _checkConnectivity() async {
+  Future<void> _handleConnectivity(ConnectivityResult result) async {
     try {
-      final connectivityResults = await _connectivity.checkConnectivity();
-      final hasConnection = connectivityResults.any((result) => 
-          result == ConnectivityResult.mobile || 
+      final hasConnection = result == ConnectivityResult.mobile ||
           result == ConnectivityResult.wifi ||
-          result == ConnectivityResult.ethernet);
-      
+          result == ConnectivityResult.ethernet;
+
       if (hasConnection) {
-        // فحص الاتصال الفعلي بالخادم
         _isOnline = await _testServerConnection();
       } else {
         _isOnline = false;
       }
-      
+
       _updateSyncStatus();
       notifyListeners();
     } catch (e) {
@@ -89,10 +88,6 @@ class ConnectivityService extends ChangeNotifier {
     } catch (e) {
       return false;
     }
-  }
-
-  void _onConnectivityChanged(List<ConnectivityResult> results) {
-    _checkConnectivity();
   }
 
   void _updateSyncStatus() {

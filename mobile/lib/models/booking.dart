@@ -12,6 +12,9 @@ class Booking {
   final String status;
   final String? notes;
   final int? calculatedNights;
+  final double totalAmount;
+  final double paidAmount;
+  final double? discountAmount;
   final DateTime? createdAt;
   final DateTime? updatedAt;
 
@@ -29,11 +32,16 @@ class Booking {
     required this.status,
     this.notes,
     this.calculatedNights,
+    this.totalAmount = 0,
+    this.paidAmount = 0,
+    this.discountAmount,
     this.createdAt,
     this.updatedAt,
   });
 
   factory Booking.fromJson(Map<String, dynamic> json) {
+    final total = double.tryParse(json['total_amount']?.toString() ?? '') ?? 0;
+    final paid = double.tryParse(json['paid_amount']?.toString() ?? '') ?? 0;
     return Booking(
       id: json['id'],
       guestName: json['guest_name'] ?? '',
@@ -48,6 +56,11 @@ class Booking {
       status: json['status'] ?? 'pending',
       notes: json['notes'],
       calculatedNights: json['calculated_nights'],
+      totalAmount: total,
+      paidAmount: paid,
+      discountAmount: json['discount_amount'] != null
+          ? double.tryParse(json['discount_amount'].toString())
+          : null,
       createdAt: json['created_at'] != null ? DateTime.parse(json['created_at']) : null,
       updatedAt: json['updated_at'] != null ? DateTime.parse(json['updated_at']) : null,
     );
@@ -67,10 +80,18 @@ class Booking {
       'check_out_date': checkOutDate.toIso8601String().split('T')[0],
       'status': status,
       'notes': notes,
+      'total_amount': totalAmount,
+      'paid_amount': paidAmount,
+      'discount_amount': discountAmount,
     };
   }
 
   int get numberOfNights => calculatedNights ?? checkOutDate.difference(checkInDate).inDays;
+
+  double get remainingAmount {
+    final remaining = totalAmount - paidAmount;
+    return remaining < 0 ? 0 : remaining;
+  }
   
   bool get isCheckedIn => status == 'checked_in';
   bool get isCheckedOut => status == 'checked_out';

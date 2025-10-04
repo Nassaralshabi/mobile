@@ -305,6 +305,12 @@ class DatabaseService {
     return result;
   }
 
+  Future<int> deleteRoom(int id) async {
+    final db = await database;
+    await _addToSyncQueue('rooms', id, 'delete', {'id': id});
+    return await db.delete('rooms', where: 'id = ?', whereArgs: [id]);
+  }
+
   // دوال CRUD للمدفوعات
   Future<List<Map<String, dynamic>>> getPayments({int? bookingId}) async {
     final db = await database;
