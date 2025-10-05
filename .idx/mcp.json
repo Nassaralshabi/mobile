@@ -1,0 +1,40 @@
+print(default_api.run_terminal_command(command = "flutter build apk"))
+{
+  "mcpServers": {
+    "firebase": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "firebase-tools@latest",
+        "experimental:mcp",
+        "--only",
+        "auth,firestore"
+      ]
+    }
+  },
+  "enabledTools": {
+    "firebase": [
+      "firebase_login",
+      "firebase_logout",
+      "firebase_validate_security_rules",
+      "firebase_get_project",
+      "firebase_list_projects",
+      "firebase_create_app",
+      "firebase_create_android_sha",
+      "firebase_update_environment",
+      "firebase_init",
+      "firebase_get_security_rules",
+      "firebase_read_resources",
+      "auth_get_users",
+      "auth_update_user",
+      "auth_set_sms_region_policy",
+      "firestore_delete_document",
+      "firestore_get_documents",
+      "firestore_list_collections",
+      "firestore_query_collection",
+      "firebase_get_sdk_config",
+      "firebase_create_project",
+      "firebase_get_environment"
+    ]
+  }
+}
