@@ -1,31 +1,43 @@
+
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'services/auth_service.dart';
 import 'services/connectivity_service.dart';
 import 'services/database_service.dart';
+import 'services/notification_service.dart';
 import 'screens/login_screen.dart';
 import 'screens/dashboard_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  
-  // تهيئة قاعدة البيانات المحلية
+
+  // Initialize local database
   final databaseService = DatabaseService();
-  await databaseService.database; // تأكد من إنشاء قاعدة البيانات
-  
-  // تهيئة خدمة الاتصال
+  await databaseService.database; // Ensure database is created
+
+  // Initialize connectivity service
   final connectivityService = ConnectivityService();
   await connectivityService.initialize();
-  
+
+  // Initialize notification service
+  final notificationService = NotificationService();
+  await notificationService.initialize();
+
   runApp(MyApp(
     connectivityService: connectivityService,
+    notificationService: notificationService,
   ));
 }
 
 class MyApp extends StatelessWidget {
   final ConnectivityService connectivityService;
-  
-  const MyApp({super.key, required this.connectivityService});
+  final NotificationService notificationService;
+
+  const MyApp({
+    super.key,
+    required this.connectivityService,
+    required this.notificationService,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -33,6 +45,7 @@ class MyApp extends StatelessWidget {
       providers: [
         ChangeNotifierProvider(create: (_) => AuthService()),
         ChangeNotifierProvider.value(value: connectivityService),
+        Provider.value(value: notificationService),
       ],
       child: MaterialApp(
         title: 'Marina Hotel',
