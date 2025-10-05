@@ -333,7 +333,7 @@ class _PaymentScreenState extends State<PaymentScreen> {
                   const SizedBox(height: 16),
                   
                   DropdownButtonFormField<String>(
-                    value: paymentMethod,
+                    initialValue: paymentMethod,
                     decoration: const InputDecoration(
                       labelText: 'طريقة الدفع',
                       border: OutlineInputBorder(),
@@ -352,7 +352,7 @@ class _PaymentScreenState extends State<PaymentScreen> {
                   const SizedBox(height: 16),
                   
                   DropdownButtonFormField<String>(
-                    value: revenueType,
+                    initialValue: revenueType,
                     decoration: const InputDecoration(
                       labelText: 'نوع الإيراد',
                       border: OutlineInputBorder(),

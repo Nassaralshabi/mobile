@@ -296,7 +296,7 @@ class _AddBookingScreenState extends State<AddBookingScreen> {
 
               // Status
               DropdownButtonFormField<String>(
-                value: _status,
+                initialValue: _status,
                 decoration: const InputDecoration(
                   labelText: 'حالة الحجز',
                   prefixIcon: Icon(Icons.info),
@@ -344,7 +344,7 @@ class _AddBookingScreenState extends State<AddBookingScreen> {
                       ),
                       const SizedBox(height: 8),
                       Text('عدد الليالي: ${_checkOutDate.difference(_checkInDate).inDays}'),
-                      Text('ملاحظة: سيتم إضافة تفاصيل الدفع لاحقاً من خلال شاشة الحجز'),
+                      const Text('ملاحظة: سيتم إضافة تفاصيل الدفع لاحقاً من خلال شاشة الحجز'),
                     ],
                   ),
                 ),

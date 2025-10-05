@@ -463,7 +463,7 @@ class _RoomDialogState extends State<_RoomDialog> {
             const SizedBox(height: 16),
             
             DropdownButtonFormField<String>(
-              value: _selectedType,
+              initialValue: _selectedType,
               decoration: const InputDecoration(
                 labelText: 'نوع الغرفة',
                 border: OutlineInputBorder(),
@@ -500,7 +500,7 @@ class _RoomDialogState extends State<_RoomDialog> {
             const SizedBox(height: 16),
             
             DropdownButtonFormField<String>(
-              value: _selectedStatus,
+              initialValue: _selectedStatus,
               decoration: const InputDecoration(
                 labelText: 'الحالة',
                 border: OutlineInputBorder(),

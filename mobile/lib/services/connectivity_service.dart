@@ -1,11 +1,9 @@
 import 'dart:async';
-import 'dart:convert';
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:flutter/foundation.dart';
 import 'database_service.dart';
 import 'api_service.dart';
 import 'auth_service.dart';
-import 'api_client.dart';
 
 class ConnectivityService extends ChangeNotifier {
   final Connectivity _connectivity = Connectivity();

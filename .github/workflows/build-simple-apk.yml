@@ -1,197 +1,75 @@
-name: Build Simple APK
+name: Build Android APK (Auto-Signed)
 
 on:
   push:
-    branches: [ main, master, develop ]
-  pull_request:
-    branches: [ main, master ]
+    branches:
+      - main
+      - master
   workflow_dispatch:
-
-env:
-  FLUTTER_VERSION: '3.24.0'
-  JAVA_VERSION: '17'
 
 jobs:
   build:
-    name: Build Marina Hotel APK
     runs-on: ubuntu-latest
-    
+
     steps:
-    - name: Checkout Code
-      uses: actions/checkout@v4
+      - name: Checkout repository
+        uses: actions/checkout@v4
 
-    - name: Setup Java
-      uses: actions/setup-java@v4
-      with:
-        distribution: 'temurin'
-        java-version: ${{ env.JAVA_VERSION }}
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
 
-    - name: Cache Gradle
-      uses: actions/cache@v3
-      with:
-        path: |
-          ~/.gradle/caches
-          ~/.gradle/wrapper
-        key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
-        restore-keys: |
-          ${{ runner.os }}-gradle-
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.35.5'
+          channel: 'stable'
+          cache: true
+      
+      - name: Get Flutter dependencies
+        run: flutter pub get
+        working-directory: ./mobile
 
-    - name: Setup Flutter
-      uses: subosito/flutter-action@v2
-      with:
-        flutter-version: ${{ env.FLUTTER_VERSION }}
-        channel: 'stable'
-        cache: true
-
-    - name: Generate Signing Key
-      working-directory: ./mobile
-      run: |
-        echo "🔐 Generating Marina Hotel signing key..."
-        keytool -genkey -v \
-          -keystore android/app/marina-hotel-key.jks \
-          -keyalg RSA \
-          -keysize 2048 \
-          -validity 10000 \
-          -alias marina-hotel \
-          -dname "CN=Marina Hotel, OU=Mobile App, O=Marina Hotel, L=Sana'a, C=YE" \
-          -storepass marinahotel2024 \
-          -keypass marinahotel2024 \
-          -noprompt
-
-    - name: Create Key Properties
-      working-directory: ./mobile
-      run: |
-        echo "🔑 Creating key.properties..."
-        cat > android/key.properties << EOF
-        storePassword=marinahotel2024
-        keyPassword=marinahotel2024
-        keyAlias=marina-hotel
-        storeFile=marina-hotel-key.jks
-        EOF
-
-    - name: Get Dependencies
-      working-directory: ./mobile
-      run: flutter pub get
-
-    - name: Build Release APK
-      working-directory: ./mobile
-      run: |
-        echo "🚀 Building Marina Hotel APK..."
-        flutter build apk --release
-        echo "✅ APK built successfully!"
-
-    - name: Build Split APKs
-      working-directory: ./mobile
-      run: |
-        echo "🔄 Building split APKs..."
-        flutter build apk --release --split-per-abi
-        echo "✅ Split APKs built successfully!"
-
-    - name: Prepare APK Files
-      working-directory: ./mobile
-      run: |
-        echo "📦 Preparing APK files..."
-        mkdir -p ../apk-release
+      - name: Generate Keystore
+        run: |
+          keytool -genkey -v \
+            -keystore ./mobile/marina-hotel-key.jks \
+            -keyalg RSA -keysize 2048 -validity 10000 \
+            -alias marina-hotel \
+            -storepass marinahotel2024 -keypass marinahotel2024 \
+            -dname "CN=Marina Hotel, OU=Mobile App / IT Department, O=Marina Hotel, L=Sana'a, C=YE"
         
-        # Get version and build info
-        VERSION=$(grep "version:" pubspec.yaml | cut -d' ' -f2 | cut -d'+' -f1)
-        BUILD=$GITHUB_RUN_NUMBER
-        DATE=$(date +%Y%m%d)
-        
-        # Copy APK files with descriptive names
-        if [ -f "build/app/outputs/flutter-apk/app-release.apk" ]; then
-          cp "build/app/outputs/flutter-apk/app-release.apk" "../apk-release/marina-hotel-v${VERSION}-universal-${DATE}.apk"
-          echo "✅ Universal APK ready"
-        fi
-        
-        if [ -f "build/app/outputs/flutter-apk/app-arm64-v8a-release.apk" ]; then
-          cp "build/app/outputs/flutter-apk/app-arm64-v8a-release.apk" "../apk-release/marina-hotel-v${VERSION}-arm64-${DATE}.apk"
-          echo "✅ ARM64 APK ready"
-        fi
-        
-        if [ -f "build/app/outputs/flutter-apk/app-armeabi-v7a-release.apk" ]; then
-          cp "build/app/outputs/flutter-apk/app-armeabi-v7a-release.apk" "../apk-release/marina-hotel-v${VERSION}-arm32-${DATE}.apk"
-          echo "✅ ARM32 APK ready"
-        fi
-        
-        if [ -f "build/app/outputs/flutter-apk/app-x86_64-release.apk" ]; then
-          cp "build/app/outputs/flutter-apk/app-x86_64-release.apk" "../apk-release/marina-hotel-v${VERSION}-x86_64-${DATE}.apk"
-          echo "✅ x86_64 APK ready"
-        fi
+      - name: Create Keystore Properties File
+        run: |
+          echo "storePassword=marinahotel2024" > ./mobile/android/key.properties
+          echo "keyPassword=marinahotel2024" >> ./mobile/android/key.properties
+          echo "keyAlias=marina-hotel" >> ./mobile/android/key.properties
+          # The keystore is in the mobile directory, and this properties file is in mobile/android
+          echo "storeFile=../marina-hotel-key.jks" >> ./mobile/android/key.properties
 
-    - name: Create Build Info
-      run: |
-        cd apk-release
-        echo "# 🏨 Marina Hotel APK Build" > BUILD_INFO.md
-        echo "" >> BUILD_INFO.md
-        echo "**تطبيق إدارة فندق مارينا - إصدار أندرويد**" >> BUILD_INFO.md
-        echo "" >> BUILD_INFO.md
-        echo "## 📱 معلومات البناء:" >> BUILD_INFO.md
-        echo "- **التاريخ:** $(date)" >> BUILD_INFO.md
-        echo "- **رقم البناء:** $GITHUB_RUN_NUMBER" >> BUILD_INFO.md
-        echo "- **الفرع:** $GITHUB_REF_NAME" >> BUILD_INFO.md
-        echo "- **Commit:** $GITHUB_SHA" >> BUILD_INFO.md
-        echo "" >> BUILD_INFO.md
-        echo "## 📥 ملفات APK:" >> BUILD_INFO.md
-        echo "" >> BUILD_INFO.md
-        for file in *.apk; do
-          if [ -f "$file" ]; then
-            SIZE=$(du -h "$file" | cut -f1)
-            echo "- **$file** ($SIZE)" >> BUILD_INFO.md
-          fi
-        done
-        echo "" >> BUILD_INFO.md
-        echo "## 🚀 المميزات:" >> BUILD_INFO.md
-        echo "- ✅ إدارة شاملة للفندق" >> BUILD_INFO.md
-        echo "- ✅ عمل بدون إنترنت" >> BUILD_INFO.md
-        echo "- ✅ مزامنة تلقائية" >> BUILD_INFO.md
-        echo "- ✅ واجهة عربية" >> BUILD_INFO.md
-        echo "- ✅ تقارير مفصلة" >> BUILD_INFO.md
-        echo "" >> BUILD_INFO.md
-        echo "## 📱 التثبيت:" >> BUILD_INFO.md
-        echo "1. حمل ملف APK المناسب لجهازك" >> BUILD_INFO.md
-        echo "2. فعّل 'مصادر غير معروفة' في الإعدادات" >> BUILD_INFO.md
-        echo "3. ثبت التطبيق" >> BUILD_INFO.md
-        echo "4. استمتع بإدارة فندقك! 🏨" >> BUILD_INFO.md
+      - name: Build Signed APKs
+        run: flutter build apk --release --split-per-abi
+        working-directory: ./mobile
 
-    - name: Upload APK Files
-      uses: actions/upload-artifact@v4
-      with:
-        name: marina-hotel-apk-${{ github.run_number }}
-        path: apk-release/
-        retention-days: 30
+      - name: Prepare Artifacts
+        id: prep_artifacts
+        run: |
+          cd mobile
+          VERSION=$(grep 'version:' pubspec.yaml | sed 's/version: //' | tr -d '+')
+          DATE=$(date +%Y%m%d)
+          ARTIFACT_DIR=../artifacts
+          APK_DIR=build/app/outputs/flutter-apk
+          
+          mkdir -p $ARTIFACT_DIR
 
-    - name: Create Release (on tag)
-      if: startsWith(github.ref, 'refs/tags/')
-      uses: softprops/action-gh-release@v1
-      with:
-        files: apk-release/*.apk
-        body_path: apk-release/BUILD_INFO.md
-        name: Marina Hotel ${{ github.ref_name }}
-        draft: false
-        prerelease: false
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-    - name: Build Summary
-      run: |
-        echo "## 🎉 Marina Hotel APK Build Complete!" >> $GITHUB_STEP_SUMMARY
-        echo "" >> $GITHUB_STEP_SUMMARY
-        echo "### 📱 APK Files Built:" >> $GITHUB_STEP_SUMMARY
-        cd apk-release
-        for file in *.apk; do
-          if [ -f "$file" ]; then
-            SIZE=$(du -h "$file" | cut -f1)
-            echo "- **$file** ($SIZE)" >> $GITHUB_STEP_SUMMARY
-          fi
-        done
-        echo "" >> $GITHUB_STEP_SUMMARY
-        echo "### 📥 Download:" >> $GITHUB_STEP_SUMMARY
-        echo "Check the **Artifacts** section above to download APK files." >> $GITHUB_STEP_SUMMARY
-        echo "" >> $GITHUB_STEP_SUMMARY
-        echo "### 🏨 Marina Hotel Features:" >> $GITHUB_STEP_SUMMARY
-        echo "- ✅ Complete hotel management" >> $GITHUB_STEP_SUMMARY
-        echo "- ✅ Offline functionality" >> $GITHUB_STEP_SUMMARY
-        echo "- ✅ Automatic sync" >> $GITHUB_STEP_SUMMARY
-        echo "- ✅ Arabic interface" >> $GITHUB_STEP_SUMMARY
-        echo "- ✅ Detailed reports" >> $GITHUB_STEP_SUMMARY
+          mv "$APK_DIR/app-arm64-v8a-release.apk" "$ARTIFACT_DIR/marina-hotel-v${VERSION}-arm64-${DATE}.apk"
+          mv "$APK_DIR/app-armeabi-v7a-release.apk" "$ARTIFACT_DIR/marina-hotel-v${VERSION}-arm32-${DATE}.apk"
+          mv "$APK_DIR/app-x86_64-release.apk" "$ARTIFACT_DIR/marina-hotel-v${VERSION}-x86_64-${DATE}.apk"
+          
+      - name: Upload APK Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: marina-hotel-apks-${{ github.run_number }}
+          path: artifacts/

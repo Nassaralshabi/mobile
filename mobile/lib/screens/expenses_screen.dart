@@ -335,7 +335,7 @@ class _ExpensesScreenState extends State<ExpensesScreen> {
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   DropdownButtonFormField<String>(
-                    value: selectedCategory,
+                    initialValue: selectedCategory,
                     decoration: const InputDecoration(
                       labelText: 'الفئة',
                       border: OutlineInputBorder(),
