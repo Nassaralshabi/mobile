@@ -1,75 +1,53 @@
-name: Build Android APK (Auto-Signed)
+name: Build Signed APK with Temp Key
 
 on:
   push:
     branches:
       - main
-      - master
-  workflow_dispatch:
 
 jobs:
-  build:
+  build-apk:
     runs-on: ubuntu-latest
-
     steps:
-      - name: Checkout repository
+      - name: Checkout Code
         uses: actions/checkout@v4
 
-      - name: Set up Java
+      - name: Install Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.24.0'
+          channel: 'stable'
+          cache: true
+
+      - name: Install Java
         uses: actions/setup-java@v4
         with:
           distribution: 'temurin'
           java-version: '17'
 
-      - name: Set up Flutter
-        uses: subosito/flutter-action@v2
-        with:
-          flutter-version: '3.35.5'
-          channel: 'stable'
-          cache: true
-      
-      - name: Get Flutter dependencies
-        run: flutter pub get
-        working-directory: ./mobile
-
-      - name: Generate Keystore
+      - name: Create Temporary Keystore and Properties
+        working-directory: ./mobile/android
         run: |
-          keytool -genkey -v \
-            -keystore ./mobile/marina-hotel-key.jks \
+          keytool -genkey -v -keystore app/keystore.jks \
             -keyalg RSA -keysize 2048 -validity 10000 \
-            -alias marina-hotel \
-            -storepass marinahotel2024 -keypass marinahotel2024 \
-            -dname "CN=Marina Hotel, OU=Mobile App / IT Department, O=Marina Hotel, L=Sana'a, C=YE"
-        
-      - name: Create Keystore Properties File
-        run: |
-          echo "storePassword=marinahotel2024" > ./mobile/android/key.properties
-          echo "keyPassword=marinahotel2024" >> ./mobile/android/key.properties
-          echo "keyAlias=marina-hotel" >> ./mobile/android/key.properties
-          # The keystore is in the mobile directory, and this properties file is in mobile/android
-          echo "storeFile=../marina-hotel-key.jks" >> ./mobile/android/key.properties
+            -alias upload \
+            -storepass temppassword -keypass temppassword \
+            -dname "CN=Temp, OU=Temp, O=Temp, L=Temp, S=Temp, C=US"
 
-      - name: Build Signed APKs
-        run: flutter build apk --release --split-per-abi
+          echo "storeFile=keystore.jks" > key.properties
+          echo "storePassword=temppassword" >> key.properties
+          echo "keyPassword=temppassword" >> key.properties
+          echo "keyAlias=upload" >> key.properties
+
+      - name: Run Flutter Build
         working-directory: ./mobile
-
-      - name: Prepare Artifacts
-        id: prep_artifacts
         run: |
-          cd mobile
-          VERSION=$(grep 'version:' pubspec.yaml | sed 's/version: //' | tr -d '+')
-          DATE=$(date +%Y%m%d)
-          ARTIFACT_DIR=../artifacts
-          APK_DIR=build/app/outputs/flutter-apk
-          
-          mkdir -p $ARTIFACT_DIR
+          flutter clean
+          flutter pub get
+          flutter build apk --release
 
-          mv "$APK_DIR/app-arm64-v8a-release.apk" "$ARTIFACT_DIR/marina-hotel-v${VERSION}-arm64-${DATE}.apk"
-          mv "$APK_DIR/app-armeabi-v7a-release.apk" "$ARTIFACT_DIR/marina-hotel-v${VERSION}-arm32-${DATE}.apk"
-          mv "$APK_DIR/app-x86_64-release.apk" "$ARTIFACT_DIR/marina-hotel-v${VERSION}-x86_64-${DATE}.apk"
-          
       - name: Upload APK Artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: marina-hotel-apks-${{ github.run_number }}
-          path: artifacts/
+          name: release-apks
+          path: mobile/build/app/outputs/flutter-apk/*.apk
