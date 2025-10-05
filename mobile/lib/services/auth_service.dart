@@ -1,89 +1,98 @@
+
+import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
-import 'dart:convert';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
 class AuthService extends ChangeNotifier {
   bool _isLoggedIn = false;
   String? _token;
-  Map<String, dynamic>? _user;
+  String? _username;
+  final FlutterSecureStorage _secureStorage = const FlutterSecureStorage();
 
   bool get isLoggedIn => _isLoggedIn;
   String? get token => _token;
-  Map<String, dynamic>? get user => _user;
-
-  // Base URL for your Marina Hotel API
-  static const String baseUrl = 'http://localhost/marina hotel/api';
+  String? get username => _username;
 
   AuthService() {
-    _loadAuthState();
+    _loadUser();
   }
 
-  Future<void> _loadAuthState() async {
-    final prefs = await SharedPreferences.getInstance();
-    _token = prefs.getString('auth_token');
-    final userJson = prefs.getString('user_data');
-    
-    if (_token != null && userJson != null) {
-      _user = json.decode(userJson);
+  Future<void> _loadUser() async {
+    _token = await _secureStorage.read(key: 'auth_token');
+    _username = await _secureStorage.read(key: 'username');
+    if (_token != null) {
       _isLoggedIn = true;
       notifyListeners();
     }
   }
 
-  Future<bool> login(String username, String password) async {
-    try {
-      final response = await http.post(
-        Uri.parse('$baseUrl/login.php'),
-        headers: {'Content-Type': 'application/json'},
-        body: json.encode({
-          'username': username,
-          'password': password,
-        }),
-      );
+  Future<bool> login(String username, String password, bool isOnline) async {
+    if (isOnline) {
+      try {
+        // Try to login online
+        final prefs = await SharedPreferences.getInstance();
+        final baseUrl = prefs.getString('server_url') ?? 'http://localhost/marina-hotel/api';
+        final response = await http.post(
+          Uri.parse('$baseUrl/login.php'),
+          body: {
+            'username': username,
+            'password': password,
+          },
+        ).timeout(const Duration(seconds: 10));
 
-      if (response.statusCode == 200) {
-        final data = json.decode(response.body);
-        
-        if (data['success'] == true) {
-          _token = data['token'];
-          _user = data['user'];
-          _isLoggedIn = true;
-
-          // Save to SharedPreferences
-          final prefs = await SharedPreferences.getInstance();
-          await prefs.setString('auth_token', _token!);
-          await prefs.setString('user_data', json.encode(_user));
-
-          notifyListeners();
-          return true;
+        if (response.statusCode == 200) {
+          final data = json.decode(response.body);
+          if (data['success'] == true) {
+            _isLoggedIn = true;
+            _token = data['token'];
+            _username = username;
+            await _secureStorage.write(key: 'auth_token', value: _token);
+            await _secureStorage.write(key: 'username', value: _username);
+            await _secureStorage.write(key: 'password', value: password); // For offline login
+            notifyListeners();
+            return true;
+          }
         }
+        return false;
+      } catch (e) {
+        // If online login fails, try offline
+        return _offlineLogin(username, password);
       }
-      return false;
-    } catch (e) {
-      if (kDebugMode) {
-        print('Login error: $e');
-      }
-      return false;
+    } else {
+      // If offline, try to login with stored credentials
+      return _offlineLogin(username, password);
     }
+  }
+
+  Future<bool> _offlineLogin(String username, String password) async {
+    final storedUsername = await _secureStorage.read(key: 'username');
+    final storedPassword = await _secureStorage.read(key: 'password');
+
+    if (username == storedUsername && password == storedPassword) {
+      _isLoggedIn = true;
+      _token = await _secureStorage.read(key: 'auth_token');
+      _username = storedUsername;
+      notifyListeners();
+      return true;
+    }
+    return false;
   }
 
   Future<void> logout() async {
     _isLoggedIn = false;
     _token = null;
-    _user = null;
-
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.remove('auth_token');
-    await prefs.remove('user_data');
-
+    _username = null;
+    await _secureStorage.deleteAll();
     notifyListeners();
   }
 
   Map<String, String> getAuthHeaders() {
+    if (_token == null) return {};
     return {
-      'Content-Type': 'application/json',
       'Authorization': 'Bearer $_token',
+      'Content-Type': 'application/json',
     };
   }
 }

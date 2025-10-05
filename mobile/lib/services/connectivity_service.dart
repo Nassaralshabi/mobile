@@ -2,17 +2,16 @@ import 'dart:async';
 import 'dart:convert';
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:flutter/foundation.dart';
-import 'package:http/http.dart' as http;
 import 'database_service.dart';
 import 'api_service.dart';
+import 'auth_service.dart';
+import 'api_client.dart';
 
 class ConnectivityService extends ChangeNotifier {
-  static final ConnectivityService _instance = ConnectivityService._internal();
-  factory ConnectivityService() => _instance;
-  ConnectivityService._internal();
-
   final Connectivity _connectivity = Connectivity();
   final DatabaseService _dbService = DatabaseService();
+  final ApiService _apiService;
+  final AuthService _authService;
   
   bool _isOnline = false;
   bool _isSyncing = false;
@@ -27,7 +26,11 @@ class ConnectivityService extends ChangeNotifier {
   String get syncStatus => _syncStatus;
   DateTime? get lastSyncTime => _lastSyncTime;
 
-  Future<void> initialize() async {
+  ConnectivityService(this._authService, this._apiService) {
+    _initialize();
+  }
+
+  Future<void> _initialize() async {
     final initialStatus = await _connectivity.checkConnectivity();
     await _handleConnectivity(initialStatus);
 
@@ -52,9 +55,7 @@ class ConnectivityService extends ChangeNotifier {
 
   Future<void> _handleConnectivity(ConnectivityResult result) async {
     try {
-      final hasConnection = result == ConnectivityResult.mobile ||
-          result == ConnectivityResult.wifi ||
-          result == ConnectivityResult.ethernet;
+      final hasConnection = result != ConnectivityResult.none;
 
       if (hasConnection) {
         _isOnline = await _testServerConnection();
@@ -73,18 +74,8 @@ class ConnectivityService extends ChangeNotifier {
 
   Future<bool> _testServerConnection() async {
     try {
-      // تحديث إعدادات الخادم قبل الاختبار
-      await ApiService.updateServerSettings();
-      
-      final response = await http.get(
-        Uri.parse('${ApiService.baseUrl}/test.php'),
-        headers: {
-          'Authorization': 'Bearer ${ApiService.authToken}',
-          'Content-Type': 'application/json',
-        },
-      ).timeout(const Duration(seconds: 5));
-      
-      return response.statusCode == 200;
+      await _apiService.getReports();
+      return true;
     } catch (e) {
       return false;
     }
@@ -142,37 +133,16 @@ class ConnectivityService extends ChangeNotifier {
   Future<void> _syncReferenceData() async {
     try {
       // مزامنة الغرف
-      final roomsResponse = await http.get(
-        Uri.parse('${ApiService.baseUrl}/rooms.php'),
-        headers: {'Authorization': 'Bearer token'},
-      );
-      
-      if (roomsResponse.statusCode == 200) {
-        final roomsData = json.decode(roomsResponse.body);
-        await _updateLocalRooms(roomsData['rooms'] ?? []);
-      }
+      final serverRooms = await _apiService.getRooms();
+      await _updateLocalRooms(serverRooms);
 
       // مزامنة الموظفين
-      final employeesResponse = await http.get(
-        Uri.parse('${ApiService.baseUrl}/expenses.php?action=employees'),
-        headers: {'Authorization': 'Bearer token'},
-      );
-      
-      if (employeesResponse.statusCode == 200) {
-        final employeesData = json.decode(employeesResponse.body);
-        await _updateLocalEmployees(employeesData['employees'] ?? []);
-      }
+      final serverEmployees = await _apiService.getEmployees();
+      await _updateLocalEmployees(serverEmployees);
 
       // مزامنة الموردين
-      final suppliersResponse = await http.get(
-        Uri.parse('${ApiService.baseUrl}/expenses.php?action=suppliers'),
-        headers: {'Authorization': 'Bearer token'},
-      );
-      
-      if (suppliersResponse.statusCode == 200) {
-        final suppliersData = json.decode(suppliersResponse.body);
-        await _updateLocalSuppliers(suppliersData['suppliers'] ?? []);
-      }
+      final serverSuppliers = await _apiService.getSuppliers();
+      await _updateLocalSuppliers(serverSuppliers);
 
     } catch (e) {
       throw Exception('فشل في مزامنة البيانات المرجعية: $e');
@@ -226,40 +196,13 @@ class ConnectivityService extends ChangeNotifier {
     final booking = bookings.first;
     
     if (action == 'create') {
-      final response = await http.post(
-        Uri.parse('${ApiService.baseUrl}/bookings.php'),
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': 'Bearer token',
-        },
-        body: json.encode({
-          'guest_name': booking['guest_name'],
-          'guest_phone': booking['guest_phone'],
-          'guest_email': booking['guest_email'],
-          'guest_id_type': booking['guest_id_type'],
-          'guest_id_number': booking['guest_id_number'],
-          'guest_nationality': booking['guest_nationality'],
-          'guest_address': booking['guest_address'],
-          'room_number': booking['room_number'],
-          'checkin_date': booking['checkin_date'],
-          'checkout_date': booking['checkout_date'],
-          'status': booking['status'],
-          'notes': booking['notes'],
-        }),
-      );
+      final response = await _apiService.addBooking(booking as Map<String, dynamic>);
       
-      if (response.statusCode == 200) {
-        final responseData = json.decode(response.body);
-        if (responseData['success'] == true) {
-          // تحديث المعرف من الخادم
-          await db.update('bookings', {
-            'server_id': responseData['booking_id'],
-            'is_synced': 1,
-          }, where: 'id = ?', whereArgs: [localId]);
-        }
-      } else {
-        throw Exception('فشل في رفع الحجز');
-      }
+      // تحديث المعرف من الخادم
+      await db.update('bookings', {
+        'server_id': response['booking_id'],
+        'is_synced': 1,
+      }, where: 'id = ?', whereArgs: [localId]);
     }
   }
 
@@ -280,33 +223,13 @@ class ConnectivityService extends ChangeNotifier {
       
       final serverBookingId = bookings.first['server_id'];
       
-      final response = await http.post(
-        Uri.parse('${ApiService.baseUrl}/payments.php'),
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': 'Bearer token',
-        },
-        body: json.encode({
-          'booking_id': serverBookingId,
-          'amount': payment['amount'],
-          'payment_method': payment['payment_method'],
-          'payment_date': payment['payment_date'],
-          'notes': payment['notes'],
-        }),
-      );
+      final response = await _apiService.addPayment(payment as Map<String, dynamic>..['booking_id'] = serverBookingId);
       
-      if (response.statusCode == 200) {
-        final responseData = json.decode(response.body);
-        if (responseData['success'] == true) {
-          await db.update('payments', {
-            'server_id': responseData['payment_id'],
-            'server_booking_id': serverBookingId,
-            'is_synced': 1,
-          }, where: 'id = ?', whereArgs: [localId]);
-        }
-      } else {
-        throw Exception('فشل في رفع الدفعة');
-      }
+      await db.update('payments', {
+        'server_id': response['payment_id'],
+        'server_booking_id': serverBookingId,
+        'is_synced': 1,
+      }, where: 'id = ?', whereArgs: [localId]);
     }
   }
 
@@ -319,33 +242,12 @@ class ConnectivityService extends ChangeNotifier {
     final expense = expenses.first;
     
     if (action == 'create') {
-      final response = await http.post(
-        Uri.parse('${ApiService.baseUrl}/expenses.php'),
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': 'Bearer token',
-        },
-        body: json.encode({
-          'expense_type': expense['expense_type'],
-          'related_id': expense['related_id'],
-          'description': expense['description'],
-          'amount': expense['amount'],
-          'date': expense['date'],
-          'created_by': expense['created_by'],
-        }),
-      );
-      
-      if (response.statusCode == 200) {
-        final responseData = json.decode(response.body);
-        if (responseData['success'] == true) {
-          await db.update('expenses', {
-            'server_id': responseData['expense_id'],
-            'is_synced': 1,
-          }, where: 'id = ?', whereArgs: [localId]);
-        }
-      } else {
-        throw Exception('فشل في رفع المصروف');
-      }
+      final response = await _apiService.addExpense(expense as Map<String, dynamic>);
+
+      await db.update('expenses', {
+        'server_id': response['expense_id'],
+        'is_synced': 1,
+      }, where: 'id = ?', whereArgs: [localId]);
     }
   }
 
@@ -366,39 +268,18 @@ class ConnectivityService extends ChangeNotifier {
       
       final serverEmployeeId = employees.first['server_id'];
       
-      final response = await http.post(
-        Uri.parse('${ApiService.baseUrl}/expenses.php'),
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': 'Bearer token',
-        },
-        body: json.encode({
-          'action': 'add_salary_withdrawal',
-          'employee_id': serverEmployeeId,
-          'amount': withdrawal['amount'],
-          'date': withdrawal['date'],
-          'notes': withdrawal['notes'],
-          'withdrawal_type': withdrawal['withdrawal_type'],
-        }),
-      );
+      final response = await _apiService.addSalaryWithdrawal(withdrawal as Map<String, dynamic>..['employee_id'] = serverEmployeeId);
       
-      if (response.statusCode == 200) {
-        final responseData = json.decode(response.body);
-        if (responseData['success'] == true) {
-          await db.update('salary_withdrawals', {
-            'server_id': responseData['withdrawal_id'],
-            'server_employee_id': serverEmployeeId,
-            'is_synced': 1,
-          }, where: 'id = ?', whereArgs: [localId]);
-        }
-      } else {
-        throw Exception('فشل في رفع سحب الراتب');
-      }
+      await db.update('salary_withdrawals', {
+        'server_id': response['withdrawal_id'],
+        'server_employee_id': serverEmployeeId,
+        'is_synced': 1,
+      }, where: 'id = ?', whereArgs: [localId]);
     }
   }
 
   // تحديث البيانات المحلية
-  Future<void> _updateLocalRooms(List<dynamic> serverRooms) async {
+  Future<void> _updateLocalRooms(List<Map<String, dynamic>> serverRooms) async {
     final db = await _dbService.database;
     
     for (var serverRoom in serverRooms) {
@@ -430,7 +311,7 @@ class ConnectivityService extends ChangeNotifier {
     }
   }
 
-  Future<void> _updateLocalEmployees(List<dynamic> serverEmployees) async {
+  Future<void> _updateLocalEmployees(List<Map<String, dynamic>> serverEmployees) async {
     final db = await _dbService.database;
     
     for (var serverEmployee in serverEmployees) {
@@ -460,7 +341,7 @@ class ConnectivityService extends ChangeNotifier {
     }
   }
 
-  Future<void> _updateLocalSuppliers(List<dynamic> serverSuppliers) async {
+  Future<void> _updateLocalSuppliers(List<Map<String, dynamic>> serverSuppliers) async {
     final db = await _dbService.database;
     
     for (var serverSupplier in serverSuppliers) {
@@ -489,9 +370,10 @@ class ConnectivityService extends ChangeNotifier {
   }
 
   // مزامنة يدوية
-  Future<void> forcSync() async {
+  Future<void> forceSync() async {
     if (!_isOnline) {
-      await _checkConnectivity();
+      final result = await _connectivity.checkConnectivity();
+      await _handleConnectivity(result);
     }
     
     if (_isOnline) {

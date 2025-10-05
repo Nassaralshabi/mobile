@@ -1,6 +1,8 @@
+
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../services/auth_service.dart';
+import '../services/connectivity_service.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -31,9 +33,11 @@ class _LoginScreenState extends State<LoginScreen> {
     });
 
     final authService = Provider.of<AuthService>(context, listen: false);
+    final connectivityService = Provider.of<ConnectivityService>(context, listen: false);
     final success = await authService.login(
       _usernameController.text.trim(),
       _passwordController.text,
+      connectivityService.isOnline,
     );
 
     setState(() {
@@ -47,8 +51,10 @@ class _LoginScreenState extends State<LoginScreen> {
     } else {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('خطأ في اسم المستخدم أو كلمة المرور'),
+          SnackBar(
+            content: Text(connectivityService.isOnline
+                ? 'فشل تسجيل الدخول. يرجى التحقق من بيانات الاعتماد الخاصة بك.'
+                : 'فشل تسجيل الدخول في وضع عدم الاتصال. يرجى التحقق من بيانات الاعتماد الخاصة بك والمحاولة مرة أخرى.'),
             backgroundColor: Colors.red,
           ),
         );
@@ -206,9 +212,15 @@ class _LoginScreenState extends State<LoginScreen> {
                         ],
                       ),
                       const SizedBox(height: 8),
-                      Text(
-                        'اسم المستخدم: admin\nكلمة المرور: admin123',
-                        style: TextStyle(color: Colors.blue[700]),
+                      Consumer<ConnectivityService>(
+                        builder: (context, connectivity, child) {
+                          return Text(
+                            connectivity.isOnline
+                                ? 'اسم المستخدم: admin\nكلمة المرور: admin123'
+                                : 'يمكنك الآن تسجيل الدخول باستخدام آخر بيانات اعتماد مستخدمة.',
+                            style: TextStyle(color: Colors.blue[700]),
+                          );
+                        },
                       ),
                     ],
                   ),

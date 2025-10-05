@@ -1,6 +1,5 @@
-<manifest xmlns:android="http://schemas.android.com/apk/res/android"
-    package="com.marinahotel.mobile">
-    
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+
     <!-- أذونات الإنترنت والشبكة -->
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
@@ -19,11 +18,9 @@
     
     <!-- أذونات العمل في الخلفية -->
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
-    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
 
     <application
         android:label="فندق مارينا"
-        android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher"
         android:allowBackup="true"
         android:supportsRtl="true"
@@ -52,20 +49,9 @@
             </intent-filter>
         </activity>
         
-        <!-- Background work manager -->
-        <service
-            android:name="be.tramckrijte.workmanager.BackgroundWorker"
-            android:exported="false" />
-            
-        <!-- Boot receiver for background tasks -->
-        <receiver
-            android:name="be.tramckrijte.workmanager.BackgroundWorker$BootReceiver"
-            android:enabled="true"
-            android:exported="false">
-            <intent-filter>
-                <action android:name="android.intent.action.BOOT_COMPLETED" />
-            </intent-filter>
-        </receiver>
+        <meta-data
+            android:name="flutterEmbedding"
+            android:value="2" />
         
     </application>
 </manifest>

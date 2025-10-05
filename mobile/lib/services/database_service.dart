@@ -1,4 +1,6 @@
+
 import 'dart:async';
+import 'dart:convert';
 import 'dart:io';
 import 'package:sqflite/sqflite.dart';
 import 'package:path/path.dart';
@@ -51,7 +53,7 @@ class DatabaseService {
         created_at TEXT,
         updated_at TEXT,
         is_synced INTEGER DEFAULT 0,
-        sync_action TEXT DEFAULT 'create'
+        sync_action TEXT
       )
     ''');
 
@@ -67,7 +69,7 @@ class DatabaseService {
         created_at TEXT,
         updated_at TEXT,
         is_synced INTEGER DEFAULT 0,
-        sync_action TEXT DEFAULT 'create'
+        sync_action TEXT
       )
     ''');
 
@@ -84,7 +86,7 @@ class DatabaseService {
         notes TEXT,
         created_at TEXT,
         is_synced INTEGER DEFAULT 0,
-        sync_action TEXT DEFAULT 'create',
+        sync_action TEXT,
         FOREIGN KEY (booking_id) REFERENCES bookings (id)
       )
     ''');
@@ -102,7 +104,7 @@ class DatabaseService {
         created_by INTEGER,
         created_at TEXT,
         is_synced INTEGER DEFAULT 0,
-        sync_action TEXT DEFAULT 'create'
+        sync_action TEXT
       )
     ''');
 
@@ -115,7 +117,8 @@ class DatabaseService {
         basic_salary REAL DEFAULT 0,
         status TEXT DEFAULT 'active',
         created_at TEXT,
-        is_synced INTEGER DEFAULT 0
+        is_synced INTEGER DEFAULT 0,
+        sync_action TEXT
       )
     ''');
 
@@ -127,7 +130,8 @@ class DatabaseService {
         name TEXT NOT NULL,
         contact_info TEXT,
         created_at TEXT,
-        is_synced INTEGER DEFAULT 0
+        is_synced INTEGER DEFAULT 0,
+        sync_action TEXT
       )
     ''');
 
@@ -144,7 +148,7 @@ class DatabaseService {
         withdrawal_type TEXT DEFAULT 'cash',
         created_at TEXT,
         is_synced INTEGER DEFAULT 0,
-        sync_action TEXT DEFAULT 'create',
+        sync_action TEXT,
         FOREIGN KEY (employee_id) REFERENCES employees (id)
       )
     ''');
@@ -177,53 +181,6 @@ class DatabaseService {
   }
 
   Future<void> _insertInitialData(Database db) async {
-    // إدراج أنواع الغرف الافتراضية
-    final roomTypes = [
-      {'room_number': '101', 'type': 'سرير فردي', 'price': 15000.0, 'status': 'شاغرة'},
-      {'room_number': '102', 'type': 'سرير عائلي', 'price': 15000.0, 'status': 'شاغرة'},
-      {'room_number': '103', 'type': 'سرير فردي', 'price': 15000.0, 'status': 'شاغرة'},
-      {'room_number': '201', 'type': 'سرير عائلي', 'price': 17000.0, 'status': 'شاغرة'},
-      {'room_number': '202', 'type': 'جناح', 'price': 20000.0, 'status': 'شاغرة'},
-    ];
-
-    for (var room in roomTypes) {
-      await db.insert('rooms', {
-        ...room,
-        'created_at': DateTime.now().toIso8601String(),
-        'is_synced': 0,
-      });
-    }
-
-    // إدراج موظفين افتراضيين
-    final employees = [
-      {'name': 'محمد أحمد', 'basic_salary': 50000.0, 'status': 'active'},
-      {'name': 'عبدالله طه', 'basic_salary': 45000.0, 'status': 'active'},
-      {'name': 'عمار الشوب', 'basic_salary': 40000.0, 'status': 'active'},
-    ];
-
-    for (var employee in employees) {
-      await db.insert('employees', {
-        ...employee,
-        'created_at': DateTime.now().toIso8601String(),
-        'is_synced': 0,
-      });
-    }
-
-    // إدراج موردين افتراضيين
-    final suppliers = [
-      {'name': 'مواد كهربائيات', 'contact_info': ''},
-      {'name': 'سباكة', 'contact_info': ''},
-      {'name': 'منظفات وأكياس قمامة', 'contact_info': ''},
-    ];
-
-    for (var supplier in suppliers) {
-      await db.insert('suppliers', {
-        ...supplier,
-        'created_at': DateTime.now().toIso8601String(),
-        'is_synced': 0,
-      });
-    }
-
     // إعدادات افتراضية
     await db.insert('app_settings', {
       'key': 'last_sync',
@@ -275,7 +232,8 @@ class DatabaseService {
 
   Future<int> deleteBooking(int id) async {
     final db = await database;
-    await _addToSyncQueue('bookings', id, 'delete', {'id': id});
+    final booking = (await db.query('bookings', where: 'id = ?', whereArgs: [id])).first;
+    await _addToSyncQueue('bookings', id, 'delete', booking as Map<String, dynamic>);
     return await db.delete('bookings', where: 'id = ?', whereArgs: [id]);
   }
 
@@ -289,6 +247,7 @@ class DatabaseService {
     final db = await database;
     room['created_at'] = DateTime.now().toIso8601String();
     room['is_synced'] = 0;
+    room['sync_action'] = 'create';
     
     final id = await db.insert('rooms', room);
     await _addToSyncQueue('rooms', id, 'create', room);
@@ -299,6 +258,7 @@ class DatabaseService {
     final db = await database;
     room['updated_at'] = DateTime.now().toIso8601String();
     room['is_synced'] = 0;
+    room['sync_action'] = 'update';
     
     final result = await db.update('rooms', room, where: 'id = ?', whereArgs: [id]);
     await _addToSyncQueue('rooms', id, 'update', room);
@@ -307,7 +267,8 @@ class DatabaseService {
 
   Future<int> deleteRoom(int id) async {
     final db = await database;
-    await _addToSyncQueue('rooms', id, 'delete', {'id': id});
+    final room = (await db.query('rooms', where: 'id = ?', whereArgs: [id])).first;
+    await _addToSyncQueue('rooms', id, 'delete', room as Map<String, dynamic>);
     return await db.delete('rooms', where: 'id = ?', whereArgs: [id]);
   }
 
@@ -327,7 +288,8 @@ class DatabaseService {
     final db = await database;
     payment['created_at'] = DateTime.now().toIso8601String();
     payment['is_synced'] = 0;
-    
+    payment['sync_action'] = 'create';
+
     final id = await db.insert('payments', payment);
     await _addToSyncQueue('payments', id, 'create', payment);
     return id;
@@ -343,7 +305,8 @@ class DatabaseService {
     final db = await database;
     expense['created_at'] = DateTime.now().toIso8601String();
     expense['is_synced'] = 0;
-    
+    expense['sync_action'] = 'create';
+
     final id = await db.insert('expenses', expense);
     await _addToSyncQueue('expenses', id, 'create', expense);
     return id;
@@ -370,7 +333,8 @@ class DatabaseService {
     final db = await database;
     withdrawal['created_at'] = DateTime.now().toIso8601String();
     withdrawal['is_synced'] = 0;
-    
+    withdrawal['sync_action'] = 'create';
+
     final id = await db.insert('salary_withdrawals', withdrawal);
     await _addToSyncQueue('salary_withdrawals', id, 'create', withdrawal);
     return id;
@@ -383,7 +347,7 @@ class DatabaseService {
       'table_name': tableName,
       'record_id': recordId,
       'action': action,
-      'data': data.toString(),
+      'data': jsonEncode(data),
       'created_at': DateTime.now().toIso8601String(),
       'retry_count': 0,
     });

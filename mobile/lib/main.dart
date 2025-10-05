@@ -38,7 +38,6 @@ class MyApp extends StatelessWidget {
         title: 'Marina Hotel',
         debugShowCheckedModeBanner: false,
         theme: ThemeData(
-          primarySwatch: Colors.blue,
           primaryColor: const Color(0xFF1976D2),
           colorScheme: ColorScheme.fromSeed(
             seedColor: const Color(0xFF1976D2),
