@@ -1,3 +1,4 @@
+
 name: Build Signed APK with Temp Key
 
 on:
@@ -6,48 +7,35 @@ on:
       - main
 
 jobs:
-  build-apk:
+  build:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout Code
-        uses: actions/checkout@v4
+      - name: Checkout code
+        uses: actions/checkout@v3
 
-      - name: Install Flutter
+      - name: Set up Flutter
         uses: subosito/flutter-action@v2
         with:
-          flutter-version: '3.24.0'
+          flutter-version: '3.24.0' # Replace with your Flutter version
           channel: 'stable'
           cache: true
 
-      - name: Install Java
-        uses: actions/setup-java@v4
+      - name: Set up Java
+        uses: actions/setup-java@v3
         with:
           distribution: 'temurin'
           java-version: '17'
 
-      - name: Create Temporary Keystore and Properties
-        working-directory: ./mobile/android
+      - name: Clean, Get, and Build
         run: |
-          keytool -genkey -v -keystore app/keystore.jks \
-            -keyalg RSA -keysize 2048 -validity 10000 \
-            -alias upload \
-            -storepass temppassword -keypass temppassword \
-            -dname "CN=Temp, OU=Temp, O=Temp, L=Temp, S=Temp, C=US"
-
-          echo "storeFile=keystore.jks" > key.properties
-          echo "storePassword=temppassword" >> key.properties
-          echo "keyPassword=temppassword" >> key.properties
-          echo "keyAlias=upload" >> key.properties
-
-      - name: Run Flutter Build
-        working-directory: ./mobile
-        run: |
+          cd mobile
           flutter clean
           flutter pub get
           flutter build apk --release
-
-      - name: Upload APK Artifacts
-        uses: actions/upload-artifact@v4
+        
+      - name: Upload APK
+        uses: actions/upload-artifact@v3
         with:
-          name: release-apks
-          path: mobile/build/app/outputs/flutter-apk/*.apk
+          name: signed-apk
+          path: mobile/build/app/outputs/flutter-apk/app-release.apk
+
