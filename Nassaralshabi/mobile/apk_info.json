@@ -1,0 +1,46 @@
+{
+  "app_name": "Marina Hotel Mobile App",
+  "package_name": "com.marinahotel.mobile.debug",
+  "version": "1.0.0+1",
+  "build_type": "debug",
+  "build_date": "2025-01-06",
+  "flutter_version": "3.24.5",
+  "dart_version": "3.5.4",
+  "android_sdk": "35",
+  "min_sdk": "21",
+  "apk_files": [
+    {
+      "name": "app-universal-debug.apk",
+      "size": "87 MB",
+      "description": "Universal APK for all devices",
+      "recommended": true
+    },
+    {
+      "name": "app-arm64-v8a-debug.apk", 
+      "size": "15 MB",
+      "description": "For modern 64-bit devices"
+    },
+    {
+      "name": "app-armeabi-v7a-debug.apk",
+      "size": "36 MB", 
+      "description": "For older 32-bit devices"
+    },
+    {
+      "name": "app-x86_64-debug.apk",
+      "size": "37 MB",
+      "description": "For emulators and x86 devices"
+    }
+  ],
+  "features": [
+    "Arabic UI",
+    "Hotel booking management",
+    "Payment processing", 
+    "Financial reports",
+    "Offline functionality",
+    "Auto-sync",
+    "Local database",
+    "Security encryption"
+  ],
+  "status": "completed",
+  "location": "/project/workspace/marina_hotel_apk/"
+}
