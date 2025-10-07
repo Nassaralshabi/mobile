@@ -1,0 +1,3 @@
+-dontwarn org.codehaus.mojo.animal_sniffer.*
+-dontwarn javax.annotation.**
+-dontwarn kotlin.reflect.jvm.internal.impl.**

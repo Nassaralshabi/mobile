@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string-array name="booking_filters">
+        <item>الكل</item>
+        <item>داخل الفندق</item>
+        <item>قادمة</item>
+        <item>مكتملة</item>
+        <item>ملغاة</item>
+    </string-array>
+    <string-array name="payment_methods">
+        <item>نقدي</item>
+        <item>بطاقة</item>
+        <item>تحويل</item>
+    </string-array>
+    <string-array name="revenue_types">
+        <item>غرف</item>
+        <item>مطعم</item>
+        <item>خدمات</item>
+        <item>أخرى</item>
+    </string-array>
+</resources>

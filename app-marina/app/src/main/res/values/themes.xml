@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources xmlns:tools="http://schemas.android.com/tools">
+    <style name="Theme.AppMarina" parent="Theme.Material3.DayNight.NoActionBar">
+        <item name="colorPrimary">@color/colorPrimary</item>
+        <item name="colorOnPrimary">@color/colorOnPrimary</item>
+        <item name="colorPrimaryContainer">@color/colorPrimaryContainer</item>
+        <item name="colorSecondary">@color/colorSecondary</item>
+        <item name="colorSecondaryContainer">@color/colorSecondaryContainer</item>
+        <item name="android:windowLayoutInDisplayCutoutMode">shortEdges</item>
+        <item name="android:navigationBarColor">@color/colorSurface</item>
+        <item name="android:statusBarColor">@android:color/transparent</item>
+        <item name="android:forceDarkAllowed">false</item>
+        <item name="isLightTheme">true</item>
+        <item name="android:windowEnableSplitTouch">true</item>
+        <item name="android:fontFamily">sans-serif</item>
+    </style>
+
+    <style name="Theme.AppMarina.Splash" parent="Theme.SplashScreen">
+        <item name="windowSplashScreenBackground">@color/colorPrimary</item>
+        <item name="windowSplashScreenAnimatedIcon">@drawable/ic_launcher_foreground</item>
+        <item name="postSplashScreenTheme">@style/Theme.AppMarina</item>
+    </style>
+
+    <style name="Widget.AppMarina.Toolbar" parent="Widget.Material3.Toolbar">
+        <item name="android:background">@color/colorSurface</item>
+        <item name="titleTextAppearance">@style/TextAppearance.AppMarina.TitleLarge</item>
+        <item name="subtitleTextAppearance">@style/TextAppearance.AppMarina.BodyMedium</item>
+    </style>
+
+    <style name="Widget.AppMarina.StatusChip" parent="Widget.Material3.Chip.Assist">
+        <item name="android:minHeight">32dp</item>
+        <item name="android:textAppearance">@style/TextAppearance.AppMarina.BodySmall</item>
+        <item name="shapeAppearance">@style/ShapeAppearance.AppMarina.Chip</item>
+    </style>
+
+    <style name="Widget.AppMarina.StatisticCard" parent="Widget.Material3.CardView.Filled">
+        <item name="android:foreground">?attr/selectableItemBackgroundBorderless</item>
+        <item name="android:minHeight">120dp</item>
+    </style>
+
+    <style name="ShapeAppearance.AppMarina.Chip" parent="ShapeAppearance.Material3.Corner.Small">
+        <item name="cornerFamily">rounded</item>
+        <item name="cornerSize">12dp</item>
+    </style>
+
+    <style name="TextAppearance.AppMarina.TitleLarge" parent="TextAppearance.Material3.HeadlineMedium">
+        <item name="android:fontFamily">sans-serif-medium</item>
+    </style>
+
+    <style name="TextAppearance.AppMarina.BodyMedium" parent="TextAppearance.Material3.BodyMedium">
+        <item name="android:fontFamily">sans-serif</item>
+    </style>
+
+    <style name="TextAppearance.AppMarina.BodySmall" parent="TextAppearance.Material3.BodySmall">
+        <item name="android:fontFamily">sans-serif</item>
+    </style>
+</resources>

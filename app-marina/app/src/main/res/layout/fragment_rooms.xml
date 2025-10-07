@@ -1,0 +1,76 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:layoutDirection="rtl"
+    android:orientation="vertical"
+    android:padding="16dp">
+
+    <com.google.android.material.chip.ChipGroup
+        android:id="@+id/statusChips"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        app:singleSelection="true">
+
+        <com.google.android.material.chip.Chip
+            android:id="@+id/statusAll"
+            style="@style/Widget.Material3.Chip.Assist"
+            android:text="@string/label_filters"
+            android:checkable="true"
+            android:checked="true"
+            android:tag="" />
+
+        <com.google.android.material.chip.Chip
+            android:id="@+id/statusAvailable"
+            style="@style/Widget.Material3.Chip.Assist"
+            android:text="@string/label_status_available"
+            android:checkable="true"
+            android:tag="available" />
+
+        <com.google.android.material.chip.Chip
+            android:id="@+id/statusOccupied"
+            style="@style/Widget.Material3.Chip.Assist"
+            android:text="@string/label_status_occupied"
+            android:checkable="true"
+            android:tag="occupied" />
+
+        <com.google.android.material.chip.Chip
+            android:id="@+id/statusMaintenance"
+            style="@style/Widget.Material3.Chip.Assist"
+            android:text="@string/label_status_maintenance"
+            android:checkable="true"
+            android:tag="maintenance" />
+    </com.google.android.material.chip.ChipGroup>
+
+    <com.google.android.material.textfield.TextInputLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="16dp"
+        android:hint="@string/label_rooms">
+
+        <com.google.android.material.textfield.TextInputEditText
+            android:id="@+id/typeInput"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="نوع الغرفة" />
+    </com.google.android.material.textfield.TextInputLayout>
+
+    <androidx.recyclerview.widget.RecyclerView
+        android:id="@+id/roomsGrid"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:layout_marginTop="16dp"
+        app:spanCount="2"
+        app:layoutManager="androidx.recyclerview.widget.GridLayoutManager" />
+
+    <TextView
+        android:id="@+id/emptyState"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:gravity="center"
+        android:layout_marginTop="16dp"
+        android:text="@string/label_empty_state"
+        android:visibility="gone" />
+</LinearLayout>

@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:layoutDirection="rtl"
+    android:padding="16dp">
+
+    <com.google.android.material.chip.ChipGroup
+        android:id="@+id/statusFilterGroup"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        app:singleSelection="true">
+
+        <com.google.android.material.chip.Chip
+            android:id="@+id/statusAll"
+            style="@style/Widget.Material3.Chip.Assist"
+            android:text="@string/label_filters"
+            android:checkable="true"
+            android:checked="true"
+            android:tag="" />
+
+        <com.google.android.material.chip.Chip
+            android:id="@+id/statusPending"
+            style="@style/Widget.Material3.Chip.Assist"
+            android:text="قيد الدفع"
+            android:checkable="true"
+            android:tag="pending" />
+
+        <com.google.android.material.chip.Chip
+            android:id="@+id/statusPaid"
+            style="@style/Widget.Material3.Chip.Assist"
+            android:text="مدفوعة"
+            android:checkable="true"
+            android:tag="paid" />
+    </com.google.android.material.chip.ChipGroup>
+
+    <androidx.recyclerview.widget.RecyclerView
+        android:id="@+id/invoicesList"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:layout_marginTop="16dp" />
+
+    <TextView
+        android:id="@+id/emptyState"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:gravity="center"
+        android:text="@string/label_empty_state"
+        android:visibility="gone"
+        android:layout_marginTop="16dp" />
+</LinearLayout>
