@@ -1,0 +1,149 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.coordinatorlayout.widget.CoordinatorLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:layoutDirection="rtl">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:orientation="vertical"
+        android:padding="16dp">
+
+        <com.google.android.material.chip.ChipGroup
+            android:id="@+id/filterMethodGroup"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            app:singleSelection="true">
+
+            <com.google.android.material.chip.Chip
+                android:id="@+id/methodAll"
+                style="@style/Widget.Material3.Chip.Assist"
+                android:text="@string/label_filters"
+                android:checkable="true"
+                android:checked="true"
+                android:tag="" />
+
+            <com.google.android.material.chip.Chip
+                android:id="@+id/methodCash"
+                style="@style/Widget.Material3.Chip.Assist"
+                android:text="@string/label_payment_cash"
+                android:checkable="true"
+                android:tag="cash" />
+
+            <com.google.android.material.chip.Chip
+                android:id="@+id/methodCard"
+                style="@style/Widget.Material3.Chip.Assist"
+                android:text="@string/label_payment_card"
+                android:checkable="true"
+                android:tag="card" />
+
+            <com.google.android.material.chip.Chip
+                android:id="@+id/methodTransfer"
+                style="@style/Widget.Material3.Chip.Assist"
+                android:text="@string/label_payment_transfer"
+                android:checkable="true"
+                android:tag="transfer" />
+        </com.google.android.material.chip.ChipGroup>
+
+        <com.google.android.material.chip.ChipGroup
+            android:id="@+id/filterRevenueGroup"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="16dp"
+            app:singleSelection="true">
+
+            <com.google.android.material.chip.Chip
+                android:id="@+id/revenueAll"
+                style="@style/Widget.Material3.Chip.Assist"
+                android:text="@string/label_filters"
+                android:checkable="true"
+                android:checked="true"
+                android:tag="" />
+
+            <com.google.android.material.chip.Chip
+                android:id="@+id/revenueRoom"
+                style="@style/Widget.Material3.Chip.Assist"
+                android:text="@string/label_rooms"
+                android:checkable="true"
+                android:tag="room" />
+
+            <com.google.android.material.chip.Chip
+                android:id="@+id/revenueRestaurant"
+                style="@style/Widget.Material3.Chip.Assist"
+                android:text="@string/label_revenue_restaurant"
+                android:checkable="true"
+                android:tag="restaurant" />
+
+            <com.google.android.material.chip.Chip
+                android:id="@+id/revenueServices"
+                style="@style/Widget.Material3.Chip.Assist"
+                android:text="@string/label_revenue_services"
+                android:checkable="true"
+                android:tag="services" />
+        </com.google.android.material.chip.ChipGroup>
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/filterDateButton"
+            style="@style/Widget.Material3.Button.TonalButton"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/label_date"
+            android:layout_marginTop="16dp" />
+
+        <androidx.recyclerview.widget.RecyclerView
+            android:id="@+id/paymentsList"
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_weight="1"
+            android:layout_marginTop="16dp" />
+
+        <TextView
+            android:id="@+id/emptyState"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:gravity="center"
+            android:layout_marginTop="16dp"
+            android:text="@string/label_empty_state"
+            android:visibility="gone" />
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:layout_marginTop="16dp">
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/openCashRegister"
+                style="@style/Widget.Material3.Button"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="@string/label_cash_register" />
+
+            <Space
+                android:layout_width="16dp"
+                android:layout_height="wrap_content" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/openInvoices"
+                style="@style/Widget.Material3.Button"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="@string/label_invoices" />
+        </LinearLayout>
+    </LinearLayout>
+
+    <com.google.android.material.floatingactionbutton.FloatingActionButton
+        android:id="@+id/addPaymentFab"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_margin="24dp"
+        android:contentDescription="@string/label_add_payment"
+        app:layout_anchor="@id/paymentsList"
+        app:layout_anchorGravity="bottom|end"
+        app:srcCompat="@drawable/ic_launcher_foreground" />
+
+</androidx.coordinatorlayout.widget.CoordinatorLayout>

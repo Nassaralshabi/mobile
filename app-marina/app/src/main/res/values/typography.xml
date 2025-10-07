@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <style name="TextAppearance.AppMarina.Display" parent="TextAppearance.Material3.DisplaySmall" />
+    <style name="TextAppearance.AppMarina.Headline" parent="TextAppearance.Material3.HeadlineSmall" />
+    <style name="TextAppearance.AppMarina.Title" parent="TextAppearance.Material3.TitleMedium" />
+    <style name="TextAppearance.AppMarina.Body" parent="TextAppearance.Material3.BodyMedium" />
+    <style name="TextAppearance.AppMarina.Label" parent="TextAppearance.Material3.LabelMedium" />
+</resources>

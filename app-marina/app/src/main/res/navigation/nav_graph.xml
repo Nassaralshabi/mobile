@@ -1,0 +1,165 @@
+<?xml version="1.0" encoding="utf-8"?>
+<navigation xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/nav_graph"
+    app:startDestination="@id/dashboardFragment">
+
+    <fragment
+        android:id="@+id/dashboardFragment"
+        android:name="com.hotel.management.ui.dashboard.DashboardFragment"
+        android:label="@string/label_dashboard"
+        tools:layout="@layout/fragment_dashboard">
+        <action
+            android:id="@+id/action_dashboard_to_bookings"
+            app:destination="@id/bookingsFragment" />
+        <action
+            android:id="@+id/action_dashboard_to_rooms"
+            app:destination="@id/roomsFragment" />
+        <action
+            android:id="@+id/action_dashboard_to_payments"
+            app:destination="@id/paymentsFragment" />
+        <action
+            android:id="@+id/action_dashboard_to_cash_register"
+            app:destination="@id/cashRegisterFragment" />
+        <action
+            android:id="@+id/action_dashboard_to_expenses"
+            app:destination="@id/expensesFragment" />
+        <action
+            android:id="@+id/action_dashboard_to_employees"
+            app:destination="@id/employeesFragment" />
+        <action
+            android:id="@+id/action_dashboard_to_invoices"
+            app:destination="@id/invoicesFragment" />
+        <action
+            android:id="@+id/action_dashboard_to_reports"
+            app:destination="@id/reportsFragment" />
+        <action
+            android:id="@+id/action_dashboard_to_settings"
+            app:destination="@id/settingsFragment" />
+    </fragment>
+
+    <fragment
+        android:id="@+id/bookingsFragment"
+        android:name="com.hotel.management.ui.bookings.list.BookingsFragment"
+        android:label="@string/label_bookings"
+        tools:layout="@layout/fragment_bookings">
+        <action
+            android:id="@+id/action_bookings_to_booking_details"
+            app:destination="@id/bookingDetailsFragment" />
+        <action
+            android:id="@+id/action_bookings_to_booking_edit"
+            app:destination="@id/bookingEditFragment" />
+    </fragment>
+
+    <fragment
+        android:id="@+id/bookingDetailsFragment"
+        android:name="com.hotel.management.ui.bookings.details.BookingDetailsFragment"
+        android:label="@string/label_booking_info"
+        tools:layout="@layout/fragment_booking_details">
+        <argument
+            android:name="bookingId"
+            app:argType="long" />
+        <action
+            android:id="@+id/action_booking_details_to_booking_edit"
+            app:destination="@id/bookingEditFragment" />
+        <action
+            android:id="@+id/action_booking_details_to_payments"
+            app:destination="@id/paymentsFragment" />
+    </fragment>
+
+    <fragment
+        android:id="@+id/bookingEditFragment"
+        android:name="com.hotel.management.ui.bookings.edit.BookingEditFragment"
+        android:label="@string/label_add_booking"
+        tools:layout="@layout/fragment_booking_edit">
+        <argument
+            android:name="bookingId"
+            app:argType="long"
+            android:defaultValue="0" />
+    </fragment>
+
+    <fragment
+        android:id="@+id/roomsFragment"
+        android:name="com.hotel.management.ui.rooms.RoomsFragment"
+        android:label="@string/label_rooms"
+        tools:layout="@layout/fragment_rooms" />
+
+    <fragment
+        android:id="@+id/paymentsFragment"
+        android:name="com.hotel.management.ui.payments.list.PaymentsFragment"
+        android:label="@string/label_payments"
+        tools:layout="@layout/fragment_payments">
+        <action
+            android:id="@+id/action_payments_to_add_payment"
+            app:destination="@id/addPaymentFragment" />
+        <action
+            android:id="@+id/action_payments_to_cash_register"
+            app:destination="@id/cashRegisterFragment" />
+        <action
+            android:id="@+id/action_payments_to_invoices"
+            app:destination="@id/invoicesFragment" />
+    </fragment>
+
+    <fragment
+        android:id="@+id/addPaymentFragment"
+        android:name="com.hotel.management.ui.payments.add.AddPaymentFragment"
+        android:label="@string/label_add_payment"
+        tools:layout="@layout/fragment_add_payment" />
+
+    <fragment
+        android:id="@+id/cashRegisterFragment"
+        android:name="com.hotel.management.ui.payments.cashregister.CashRegisterFragment"
+        android:label="@string/label_cash_register"
+        tools:layout="@layout/fragment_cash_register" />
+
+    <fragment
+        android:id="@+id/invoicesFragment"
+        android:name="com.hotel.management.ui.payments.invoices.InvoicesFragment"
+        android:label="@string/label_invoices"
+        tools:layout="@layout/fragment_invoices" />
+
+    <fragment
+        android:id="@+id/expensesFragment"
+        android:name="com.hotel.management.ui.expenses.list.ExpensesFragment"
+        android:label="@string/label_expenses"
+        tools:layout="@layout/fragment_expenses">
+        <action
+            android:id="@+id/action_expenses_to_add_expense"
+            app:destination="@id/addExpenseFragment" />
+    </fragment>
+
+    <fragment
+        android:id="@+id/addExpenseFragment"
+        android:name="com.hotel.management.ui.expenses.add.AddExpenseFragment"
+        android:label="@string/label_add_expense"
+        tools:layout="@layout/fragment_add_expense" />
+
+    <fragment
+        android:id="@+id/employeesFragment"
+        android:name="com.hotel.management.ui.settings.employees.EmployeesFragment"
+        android:label="@string/label_employees"
+        tools:layout="@layout/fragment_employees" />
+
+    <fragment
+        android:id="@+id/settingsFragment"
+        android:name="com.hotel.management.ui.settings.SettingsFragment"
+        android:label="@string/label_settings"
+        tools:layout="@layout/fragment_settings">
+        <action
+            android:id="@+id/action_settings_to_activity_log"
+            app:destination="@id/activityLogFragment" />
+    </fragment>
+
+    <fragment
+        android:id="@+id/activityLogFragment"
+        android:name="com.hotel.management.ui.settings.activitylog.ActivityLogFragment"
+        android:label="@string/label_activity_log"
+        tools:layout="@layout/fragment_activity_log" />
+
+    <fragment
+        android:id="@+id/reportsFragment"
+        android:name="com.hotel.management.ui.dashboard.ReportsFragment"
+        android:label="@string/label_reports"
+        tools:layout="@layout/fragment_reports" />
+</navigation>
