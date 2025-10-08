@@ -1,0 +1,54 @@
+name: APK Build Basic
+
+on:
+  workflow_dispatch:
+    inputs:
+      build_type:
+        description: 'Build Type'
+        default: 'debug' 
+        type: choice
+        options:
+          - debug
+          - release
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - uses: actions/setup-java@v4
+      with:
+        distribution: 'zulu'
+        java-version: '17'
+    
+    - name: Download Flutter
+      run: |
+        git clone https://github.com/flutter/flutter.git -b stable --depth 1
+        echo "$PWD/flutter/bin" >> $GITHUB_PATH
+        
+    - name: Flutter Version
+      run: |
+        flutter --version
+        flutter doctor --android-licenses --android-sdk=$ANDROID_HOME || true
+        
+    - name: Get Dependencies
+      run: |
+        cd mobile
+        flutter pub get
+        
+    - name: Build APK
+      run: |
+        cd mobile
+        if [ "${{ github.event.inputs.build_type }}" = "release" ]; then
+          flutter build apk --release
+        else  
+          flutter build apk --debug
+        fi
+        
+    - name: Upload APK
+      uses: actions/upload-artifact@v4
+      with:
+        name: marina-hotel-apk-basic
+        path: mobile/build/app/outputs/flutter-apk/*.apk
