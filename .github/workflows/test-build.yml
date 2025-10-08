@@ -1,0 +1,30 @@
+name: Test Marina Build
+
+on:
+  workflow_dispatch:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        
+      - name: Check structure
+        run: |
+          echo "📁 Checking project structure..."
+          ls -la
+          echo ""
+          echo "📁 App Marina folder:"
+          ls -la app-marina/
+          echo ""
+          echo "📁 Gradle wrapper:"
+          ls -la app-marina/gradlew*
+          
+      - name: Test basic Android setup
+        run: |
+          echo "🔧 Java version:"
+          java -version
+          echo ""
+          echo "📦 Available packages:"
+          which gradle || echo "Gradle not found"
