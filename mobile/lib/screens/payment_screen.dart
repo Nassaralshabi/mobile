@@ -30,12 +30,30 @@ class _PaymentScreenState extends State<PaymentScreen> {
   }
 
   Future<void> _loadPayments() async {
+    final bookingId = widget.booking.id;
+    if (bookingId == null) {
+      setState(() {
+        _isLoading = false;
+        _payments = [];
+        _totalPaid = 0;
+      });
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('لا يمكن تحميل المدفوعات لأن الحجز غير محفوظ بعد'),
+            backgroundColor: Colors.orange,
+          ),
+        );
+      }
+      return;
+    }
+
     setState(() {
       _isLoading = true;
     });
 
     try {
-      final paymentsData = await _apiService.getPayments(bookingId: widget.booking.id);
+      final paymentsData = await _apiService.getPayments(bookingId: bookingId);
       final payments = paymentsData.map((data) => Payment.fromJson(data)).toList();
       
       setState(() {
@@ -293,6 +311,17 @@ class _PaymentScreenState extends State<PaymentScreen> {
   }
 
   void _showAddPaymentDialog() {
+    final bookingId = widget.booking.id;
+    if (bookingId == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('يجب حفظ الحجز قبل إضافة مدفوعات'),
+          backgroundColor: Colors.orange,
+        ),
+      );
+      return;
+    }
+
     final formKey = GlobalKey<FormState>();
     final amountController = TextEditingController();
     final descriptionController = TextEditingController();
@@ -426,7 +455,7 @@ class _PaymentScreenState extends State<PaymentScreen> {
             onPressed: () async {
               if (formKey.currentState!.validate()) {
                 final payment = Payment(
-                  bookingId: widget.booking.id!,
+                  bookingId: bookingId,
                   amount: double.parse(amountController.text),
                   paymentMethod: paymentMethod,
                   revenueType: revenueType,
