@@ -1,200 +1,142 @@
-name: Build Android APK
- 
+name: Android APK Build
+
 on:
   push:
-    branches: [ main, master, develop ]
+    branches: [ main ]
     paths:
       - 'mobile/**'
       - '.github/workflows/build-apk.yml'
-  pull_request:
-    branches: [ main, master ]
-    paths:
-      - 'mobile/**'
   workflow_dispatch:
     inputs:
       build_type:
-        description: 'Build type'
+        description: 'Build Type'
         required: true
-        default: 'release'
+        default: 'debug'
         type: choice
         options:
-          - release
           - debug
-      version_name:
-        description: 'Version name (optional)'
+          - release
+      upload_release:
+        description: 'Create GitHub Release'
         required: false
-        type: string
+        default: false
+        type: boolean
 
 env:
   FLUTTER_VERSION: '3.24.0'
   JAVA_VERSION: '17'
 
 jobs:
-  build-apk:
-    name: Build APK
+  build-android:
+    name: Build Android APK
     runs-on: ubuntu-latest
     
     steps:
-    - name: Checkout Repository
+    - name: Checkout Code
       uses: actions/checkout@v4
-      with:
-        fetch-depth: 0
 
-    - name: Setup Java JDK
+    - name: Setup Java
       uses: actions/setup-java@v4
       with:
-        distribution: 'temurin'
+        distribution: 'zulu'
         java-version: ${{ env.JAVA_VERSION }}
 
-    - name: Cache Gradle
-      uses: actions/cache@v3
-      with:
-        path: |
-          ~/.gradle/caches
-          ~/.gradle/wrapper
-        key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
-        restore-keys: |
-          ${{ runner.os }}-gradle-
-
-    - name: Setup Flutter SDK
+    - name: Setup Flutter
       uses: subosito/flutter-action@v2
       with:
         flutter-version: ${{ env.FLUTTER_VERSION }}
         channel: 'stable'
         cache: true
 
-    - name: Verify Flutter Installation
+    - name: Cache Dependencies
+      uses: actions/cache@v3
+      with:
+        path: |
+          ~/.pub-cache
+          mobile/.dart_tool
+        key: ${{ runner.os }}-flutter-${{ env.FLUTTER_VERSION }}-${{ hashFiles('mobile/pubspec.lock') }}
+        restore-keys: |
+          ${{ runner.os }}-flutter-${{ env.FLUTTER_VERSION }}-
+
+    - name: Get Dependencies
+      working-directory: ./mobile
       run: |
+        echo "📦 Installing Flutter dependencies..."
+        flutter pub get
+        echo "✅ Dependencies installed successfully"
+
+    - name: Verify Flutter Setup
+      working-directory: ./mobile
+      run: |
+        echo "🔍 Verifying Flutter setup..."
+        flutter doctor
         flutter --version
-        flutter doctor -v
-
-    - name: Change to Mobile Directory
-      run: cd mobile
-
-    - name: Get Flutter Dependencies
-      working-directory: ./mobile
-      run: flutter pub get
-
-    - name: Run Flutter Analyzer
-      working-directory: ./mobile
-      run: flutter analyze --no-fatal-infos
-
-    - name: Run Flutter Tests
-      working-directory: ./mobile
-      run: flutter test
-      continue-on-error: true
-
-    - name: Create Key Properties (if signing)
-      working-directory: ./mobile/android
-      run: |
-        if [ ! -f key.properties ]; then
-          echo "Creating dummy key.properties for unsigned build"
-          echo "# Dummy key properties for CI build" > key.properties
-        fi
 
     - name: Build Debug APK
       if: ${{ github.event.inputs.build_type == 'debug' || github.event.inputs.build_type == '' }}
       working-directory: ./mobile
       run: |
-        echo "Building Debug APK..."
+        echo "🔨 Building Debug APK..."
         flutter build apk --debug --verbose
-        
+        echo "✅ Debug APK built successfully"
+
     - name: Build Release APK
-      if: ${{ github.event.inputs.build_type == 'release' || github.event.inputs.build_type == '' }}
+      if: ${{ github.event.inputs.build_type == 'release' }}
       working-directory: ./mobile
       run: |
-        echo "Building Release APK..."
+        echo "🔨 Building Release APK..."
         flutter build apk --release --verbose
+        echo "✅ Release APK built successfully"
 
-    - name: Build Split APKs (Release only)
-      if: ${{ github.event.inputs.build_type == 'release' || github.event.inputs.build_type == '' }}
+    - name: Build Split APKs (Release)
+      if: ${{ github.event.inputs.build_type == 'release' }}
       working-directory: ./mobile
       run: |
-        echo "Building Split APKs..."
+        echo "🔨 Building Split APKs..."
         flutter build apk --release --split-per-abi --verbose
+        echo "✅ Split APKs built successfully"
 
-    - name: Validate Build Outputs
+    - name: Verify Build Output
       working-directory: ./mobile
       run: |
-        echo "🔍 Validating build outputs..."
+        echo "🔍 Verifying build outputs..."
         BUILD_DIR="build/app/outputs/flutter-apk"
-        
         if [ ! -d "$BUILD_DIR" ]; then
           echo "❌ Build directory not found!"
           exit 1
         fi
-        
-        if [ -z "$(ls -A $BUILD_DIR)" ]; then
-          echo "❌ No APK files generated!"
-          exit 1
-        fi
-        
-        echo "✅ Build validation passed"
-        ls -lh $BUILD_DIR
+        echo "📱 APK Files generated:"
+        ls -lh $BUILD_DIR/
+        echo "✅ Build verification passed"
 
     - name: Rename APK Files
       working-directory: ./mobile
       run: |
-        # Create output directory
+        echo "🏷️ Renaming APK files..."
         mkdir -p ../apk-output
         
-        # Get version info
-        VERSION_NAME="${{ github.event.inputs.version_name }}"
-        if [ -z "$VERSION_NAME" ]; then
-          VERSION_NAME=$(grep "version:" pubspec.yaml | cut -d' ' -f2 | cut -d'+' -f1)
-        fi
-        
-        BUILD_NUMBER=$(echo $GITHUB_RUN_NUMBER)
+        VERSION=$(grep "version:" pubspec.yaml | cut -d' ' -f2 | cut -d'+' -f1)
+        BUILD_NUMBER=$GITHUB_RUN_NUMBER
         DATE=$(date +%Y%m%d)
         
-        # Copy and rename APK files
+        # Copy and rename APKs
         if [ -f "build/app/outputs/flutter-apk/app-debug.apk" ]; then
-          cp "build/app/outputs/flutter-apk/app-debug.apk" "../apk-output/marina-hotel-v${VERSION_NAME}-debug-${DATE}-${BUILD_NUMBER}.apk"
+          cp "build/app/outputs/flutter-apk/app-debug.apk" "../apk-output/marina-hotel-v${VERSION}-debug-${DATE}-${BUILD_NUMBER}.apk"
         fi
         
         if [ -f "build/app/outputs/flutter-apk/app-release.apk" ]; then
-          cp "build/app/outputs/flutter-apk/app-release.apk" "../apk-output/marina-hotel-v${VERSION_NAME}-release-${DATE}-${BUILD_NUMBER}.apk"
+          cp "build/app/outputs/flutter-apk/app-release.apk" "../apk-output/marina-hotel-v${VERSION}-release-${DATE}-${BUILD_NUMBER}.apk"
         fi
         
         # Copy split APKs
-        if [ -f "build/app/outputs/flutter-apk/app-arm64-v8a-release.apk" ]; then
-          cp "build/app/outputs/flutter-apk/app-arm64-v8a-release.apk" "../apk-output/marina-hotel-v${VERSION_NAME}-arm64-${DATE}-${BUILD_NUMBER}.apk"
-        fi
-        
-        if [ -f "build/app/outputs/flutter-apk/app-armeabi-v7a-release.apk" ]; then
-          cp "build/app/outputs/flutter-apk/app-armeabi-v7a-release.apk" "../apk-output/marina-hotel-v${VERSION_NAME}-arm32-${DATE}-${BUILD_NUMBER}.apk"
-        fi
-        
-        if [ -f "build/app/outputs/flutter-apk/app-x86_64-release.apk" ]; then
-          cp "build/app/outputs/flutter-apk/app-x86_64-release.apk" "../apk-output/marina-hotel-v${VERSION_NAME}-x86_64-${DATE}-${BUILD_NUMBER}.apk"
-        fi
-
-    - name: Generate APK Info
-      run: |
-        cd apk-output
-        echo "# Marina Hotel APK Build Info" > BUILD_INFO.md
-        echo "" >> BUILD_INFO.md
-        echo "**Build Date:** $(date)" >> BUILD_INFO.md
-        echo "**Build Number:** $GITHUB_RUN_NUMBER" >> BUILD_INFO.md
-        echo "**Commit SHA:** $GITHUB_SHA" >> BUILD_INFO.md
-        echo "**Branch:** $GITHUB_REF_NAME" >> BUILD_INFO.md
-        echo "**Flutter Version:** ${{ env.FLUTTER_VERSION }}" >> BUILD_INFO.md
-        echo "" >> BUILD_INFO.md
-        echo "## APK Files:" >> BUILD_INFO.md
-        echo "" >> BUILD_INFO.md
-        for file in *.apk; do
-          if [ -f "$file" ]; then
-            SIZE=$(du -h "$file" | cut -f1)
-            echo "- **$file** (${SIZE})" >> BUILD_INFO.md
+        for arch in arm64-v8a armeabi-v7a x86_64; do
+          if [ -f "build/app/outputs/flutter-apk/app-${arch}-release.apk" ]; then
+            cp "build/app/outputs/flutter-apk/app-${arch}-release.apk" "../apk-output/marina-hotel-v${VERSION}-${arch}-${DATE}-${BUILD_NUMBER}.apk"
           fi
         done
-        echo "" >> BUILD_INFO.md
-        echo "## Installation Instructions:" >> BUILD_INFO.md
-        echo "" >> BUILD_INFO.md
-        echo "1. Download the APK file" >> BUILD_INFO.md
-        echo "2. Enable 'Install from unknown sources' on your Android device" >> BUILD_INFO.md
-        echo "3. Install the APK file" >> BUILD_INFO.md
-        echo "4. The app works offline and syncs when online!" >> BUILD_INFO.md
+        
+        echo "✅ APK files renamed successfully"
+        ls -lh ../apk-output/
 
     - name: Upload APK Artifacts
       uses: actions/upload-artifact@v4
@@ -203,71 +145,43 @@ jobs:
         path: apk-output/
         retention-days: 30
 
-    - name: Create Release (on tag)
-      if: startsWith(github.ref, 'refs/tags/v')
+    - name: Create Release
+      if: ${{ github.event.inputs.upload_release == 'true' && github.event.inputs.build_type == 'release' }}
       uses: softprops/action-gh-release@v1
       with:
+        tag_name: v${{ github.run_number }}-auto
+        name: Marina Hotel APK Build v${{ github.run_number }}
         files: apk-output/*.apk
-        body_path: apk-output/BUILD_INFO.md
+        body: |
+          ## 📱 Marina Hotel Android APK
+          
+          **Build Information:**
+          - Build Number: ${{ github.run_number }}
+          - Build Date: ${{ github.run_date }}
+          - Commit: ${{ github.sha }}
+          - Flutter Version: ${{ env.FLUTTER_VERSION }}
+          
+          **Installation Instructions:**
+          1. Download the appropriate APK file
+          2. Enable "Install from unknown sources" on your Android device
+          3. Install the APK file
+          4. Enjoy the Marina Hotel app! 🏨
         draft: false
         prerelease: false
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-    - name: Comment APK Download Links (on PR)
-      if: github.event_name == 'pull_request'
-      uses: actions/github-script@v7
-      with:
-        script: |
-          const fs = require('fs');
-          const path = require('path');
-          
-          const apkDir = 'apk-output';
-          const files = fs.readdirSync(apkDir).filter(f => f.endsWith('.apk'));
-          
-          let comment = '## 📱 APK Build Complete!\n\n';
-          comment += `**Build #${context.runNumber}** completed successfully.\n\n`;
-          comment += '### Download APK Files:\n';
-          
-          files.forEach(file => {
-            comment += `- [${file}](https://github.com/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId})\n`;
-          });
-          
-          comment += '\n### Installation:\n';
-          comment += '1. Download the APK file from the artifacts\n';
-          comment += '2. Enable "Install from unknown sources" on your Android device\n';
-          comment += '3. Install the APK\n';
-          comment += '4. Enjoy the Marina Hotel app! 🏨\n';
-          
-          github.rest.issues.createComment({
-            issue_number: context.issue.number,
-            owner: context.repo.owner,
-            repo: context.repo.repo,
-            body: comment
-          });
-
-  notify-success:
-    name: Notify Build Success
-    runs-on: ubuntu-latest
-    needs: build-apk
-    if: success()
-    
-    steps:
-    - name: Success Notification
+    - name: Build Summary
       run: |
-        echo "🎉 APK Build Completed Successfully!"
-        echo "📱 Marina Hotel Android app is ready for download"
-        echo "🔗 Check the Artifacts section for APK files"
-
-  notify-failure:
-    name: Notify Build Failure
-    runs-on: ubuntu-latest
-    needs: build-apk
-    if: failure()
-    
-    steps:
-    - name: Failure Notification
-      run: |
-        echo "❌ APK Build Failed!"
-        echo "🔍 Please check the build logs for errors"
-        echo "💡 Common issues: Dependencies, signing, or Flutter version"
+        echo "## 🏨 Marina Hotel APK Build Complete" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "### ✅ Build Information:" >> $GITHUB_STEP_SUMMARY
+        echo "- **Build Type:** ${{ github.event.inputs.build_type || 'debug' }}" >> $GITHUB_STEP_SUMMARY
+        echo "- **Build Number:** ${{ github.run_number }}" >> $GITHUB_STEP_SUMMARY
+        echo "- **Flutter Version:** ${{ env.FLUTTER_VERSION }}" >> $GITHUB_STEP_SUMMARY
+        echo "- **Java Version:** ${{ env.JAVA_VERSION }}" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "### 📱 Download APK:" >> $GITHUB_STEP_SUMMARY
+        echo "Check the **Artifacts** section to download the APK files" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "🎉 **Ready for installation on Android devices!**" >> $GITHUB_STEP_SUMMARY
