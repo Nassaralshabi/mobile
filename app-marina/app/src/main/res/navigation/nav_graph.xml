@@ -73,6 +73,7 @@
         android:name="com.hotel.management.ui.bookings.edit.BookingEditFragment"
         android:label="@string/label_add_booking"
         tools:layout="@layout/fragment_booking_edit">
+        <!-- 0L indicates new booking creation - see BookingConstants.NEW_BOOKING_ID -->
         <argument
             android:name="bookingId"
             app:argType="long"
