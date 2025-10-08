@@ -1,7 +1,7 @@
 package com.hotel.management.utils
 
 /**
- * Application-wide constants
+ * Constants related to the booking feature.
  */
 object BookingConstants {
     /**
