@@ -1,3 +1,6 @@
+import java.util.Properties
+import java.io.FileInputStream
+
 plugins {
     id("com.android.application")
     id("org.jetbrains.kotlin.android")
@@ -20,9 +23,32 @@ android {
         vectorDrawables.useSupportLibrary = true
     }
 
+    signingConfigs {
+        create("release") {
+            val keystorePropertiesFile = rootProject.file("key.properties")
+            if (keystorePropertiesFile.exists()) {
+                val keystoreProperties = Properties()
+                keystoreProperties.load(FileInputStream(keystorePropertiesFile))
+                
+                keyAlias = keystoreProperties["keyAlias"] as String? ?: "marina-hotel-key"
+                keyPassword = keystoreProperties["keyPassword"] as String? ?: "HotelApp@2024#Strong456"
+                storeFile = file(keystoreProperties["storeFile"] as String? ?: "keystore/marina-hotel-keystore.jks")
+                storePassword = keystoreProperties["storePassword"] as String? ?: "Marina2024!SecureKey789"
+            } else {
+                // القيم الافتراضية للاختبار
+                keyAlias = "marina-hotel-key"
+                keyPassword = "HotelApp@2024#Strong456"
+                storeFile = file("keystore/marina-hotel-keystore.jks")
+                storePassword = "Marina2024!SecureKey789"
+            }
+        }
+    }
+
     buildTypes {
         release {
-            isMinifyEnabled = false
+            signingConfig = signingConfigs.getByName("release")
+            isMinifyEnabled = true
+            isShrinkResources = true
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"

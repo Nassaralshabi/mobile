@@ -1,0 +1,5 @@
+# تجاهل ملفات keystore الحساسة
+*.jks
+*.keystore
+# لكن احتفظ بملف .gitignore نفسه
+!.gitignore
