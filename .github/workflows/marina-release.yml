@@ -1,0 +1,73 @@
+name: Marina Release Builder
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Release version (e.g., v1.0.0)'
+        required: true
+        default: 'v1.0.0'
+        type: string
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        
+      - name: Setup JDK 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+          
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v3
+        
+      - name: Setup Keystore
+        if: ${{ env.KEYSTORE_BASE64 != '' }}
+        env:
+          KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
+          KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
+        run: |
+          cd app-marina
+          mkdir -p keystore
+          echo "$KEYSTORE_BASE64" | base64 -d > keystore/marina-hotel-keystore.jks
+          echo "storeFile=keystore/marina-hotel-keystore.jks" > key.properties
+          echo "storePassword=$KEYSTORE_PASSWORD" >> key.properties
+          echo "keyAlias=$KEY_ALIAS" >> key.properties
+          echo "keyPassword=$KEY_PASSWORD" >> key.properties
+          echo "✅ Keystore configured"
+        
+      - name: Grant Permission
+        run: chmod +x app-marina/gradlew
+        
+      - name: Build Release APK
+        run: |
+          cd app-marina
+          ./gradlew clean
+          ./gradlew :app:assembleRelease --stacktrace --no-daemon
+          
+      - name: Prepare Release Files
+        run: |
+          cd app-marina
+          mkdir -p ../release-files
+          VERSION="${{ github.event.inputs.version }}"
+          
+          if [ -f "app/build/outputs/apk/release/app-release.apk" ]; then
+            cp app/build/outputs/apk/release/app-release.apk ../release-files/marina-hotel-${VERSION}-signed.apk
+            echo "✅ Signed APK ready"
+          else
+            echo "❌ No signed APK found"
+            ls -la app/build/outputs/apk/release/ || echo "No release directory"
+          fi
+          
+      - name: Upload Release APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: marina-hotel-release
+          path: release-files/*.apk
+          retention-days: 90
