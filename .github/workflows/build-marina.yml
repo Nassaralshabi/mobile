@@ -1,0 +1,74 @@
+name: Build Marina APK
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [ 'capy/*' ]
+
+jobs:
+  build-marina:
+    name: Build Marina Hotel APK
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+        
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+          
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v3
+        
+      - name: Setup Keystore (if available)
+        run: |
+          cd app-marina
+          if [ -n "${{ secrets.KEYSTORE_BASE64 }}" ]; then
+            mkdir -p keystore
+            echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 -d > keystore/marina-hotel-keystore.jks
+            echo "🔐 Keystore decoded successfully"
+            echo "storeFile=keystore/marina-hotel-keystore.jks" > key.properties
+            echo "storePassword=${{ secrets.KEYSTORE_PASSWORD }}" >> key.properties
+            echo "keyAlias=${{ secrets.KEY_ALIAS }}" >> key.properties
+            echo "keyPassword=${{ secrets.KEY_PASSWORD }}" >> key.properties
+          else
+            echo "⚠️ No keystore secrets found - will build unsigned"
+          fi
+        
+      - name: Grant Execute Permission
+        run: chmod +x app-marina/gradlew
+        
+      - name: Clean Build
+        run: |
+          cd app-marina
+          ./gradlew clean
+          
+      - name: Build Debug APK
+        run: |
+          cd app-marina
+          ./gradlew :app:assembleDebug --stacktrace
+          
+      - name: Build Release APK
+        run: |
+          cd app-marina
+          ./gradlew :app:assembleRelease --stacktrace
+          
+      - name: List Built APKs
+        run: |
+          echo "📦 Generated APK files:"
+          find app-marina/app/build/outputs/apk -name "*.apk" -type f
+          
+      - name: Upload Debug APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: marina-debug-apk
+          path: app-marina/app/build/outputs/apk/debug/*.apk
+          
+      - name: Upload Release APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: marina-release-apk
+          path: app-marina/app/build/outputs/apk/release/*.apk
