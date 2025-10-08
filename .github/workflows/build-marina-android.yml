@@ -1,16 +1,7 @@
-name: Build Marina Android APK - Simple
+name: Build Marina Android Debug APK
 
 on:
   workflow_dispatch:
-    inputs:
-      build_type:
-        description: 'Build Type (debug or release)'
-        required: true
-        default: 'debug'
-        type: choice
-        options:
-          - debug
-          - release
   push:
     branches: [main]
     paths:
@@ -45,32 +36,30 @@ jobs:
         working-directory: ./app-marina
         run: chmod +x gradlew
 
-      - name: Determine Build Type
+      - name: Set Build Type
         id: build_info
         run: |
-          BUILD_TYPE="${{ github.event.inputs.build_type || 'debug' }}"
-          echo "build_type=$BUILD_TYPE" >> $GITHUB_OUTPUT
+          echo "build_type=debug" >> $GITHUB_OUTPUT
         
-      - name: Build APK
+      - name: Build Debug APK
         working-directory: ./app-marina
         run: |
-          BUILD_TYPE=${{ steps.build_info.outputs.build_type }}
-          echo "🔨 Building $BUILD_TYPE APK..."
-          ./gradlew :app:assemble${BUILD_TYPE^} --stacktrace
-          echo "✅ Build completed for $BUILD_TYPE"
+          echo "🔨 Building debug APK..."
+          ./gradlew :app:assembleDebug --stacktrace
+          echo "✅ Debug build completed"
 
       - name: Upload APK Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: marina-apk-${{ steps.build_info.outputs.build_type }}
-          path: app-marina/app/build/outputs/apk/
+          name: marina-debug-apk
+          path: app-marina/app/build/outputs/apk/debug/
           retention-days: 7
           
       - name: Build Summary
         run: |
-          echo "## ✅ Marina Android Build Complete" >> $GITHUB_STEP_SUMMARY
+          echo "## ✅ Marina Android Debug Build Complete" >> $GITHUB_STEP_SUMMARY
           echo "تم بناء ملف APK بنجاح." >> $GITHUB_STEP_SUMMARY
-          echo "- **نوع البناء:** ${{ steps.build_info.outputs.build_type }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **نوع البناء:** debug" >> $GITHUB_STEP_SUMMARY
           echo "- **رقم البناء:** ${{ github.run_number }}" >> $GITHUB_STEP_SUMMARY
           echo "لتنزيل الملف، اذهب إلى قسم **Artifacts**." >> $GITHUB_STEP_SUMMARY
 
