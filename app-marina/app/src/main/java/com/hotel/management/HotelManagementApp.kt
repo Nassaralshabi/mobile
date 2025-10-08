@@ -42,7 +42,7 @@ class HotelManagementApp : Application(), Configuration.Provider {
 
     override fun onCreate() {
         super.onCreate()
-        WorkManager.initialize(this, workManagerConfiguration)
+        // WorkManager is automatically initialized via Configuration.Provider
         SyncScheduler.schedulePeriodicSync(WorkManager.getInstance(this))
     }
 
