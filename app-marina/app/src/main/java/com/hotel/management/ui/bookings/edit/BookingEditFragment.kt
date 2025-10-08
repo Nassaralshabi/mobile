@@ -12,6 +12,7 @@ import com.google.android.material.datepicker.MaterialDatePicker
 import com.hotel.management.HotelManagementApp
 import com.hotel.management.databinding.FragmentBookingEditBinding
 import com.hotel.management.models.BookingEntity
+import com.hotel.management.utils.BookingConstants.NEW_BOOKING_ID
 import com.hotel.management.viewmodel.AppViewModelFactory
 import com.hotel.management.viewmodel.BookingEditViewModel
 import java.time.Instant
@@ -64,7 +65,7 @@ class BookingEditFragment : Fragment() {
             booking?.let { populateForm(it) }
         }
 
-        if (args.bookingId > 0) {
+        if (args.bookingId != NEW_BOOKING_ID) {
             viewModel.loadBooking(args.bookingId)
         } else {
             updateDateFields()
