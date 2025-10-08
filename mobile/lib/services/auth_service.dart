@@ -67,6 +67,19 @@ class AuthService extends ChangeNotifier {
   }
 
   Future<bool> _offlineLogin(String username, String password) async {
+    // First check for hardcoded admin credentials
+    if (username == 'admin' && password == '1234') {
+      _isLoggedIn = true;
+      _token = 'hardcoded-admin-token-${DateTime.now().millisecondsSinceEpoch}';
+      _username = username;
+      await _secureStorage.write(key: 'auth_token', value: _token);
+      await _secureStorage.write(key: 'username', value: _username);
+      await _secureStorage.write(key: 'password', value: password);
+      notifyListeners();
+      return true;
+    }
+
+    // Then check stored credentials
     final storedUsername = await _secureStorage.read(key: 'username');
     final storedPassword = await _secureStorage.read(key: 'password');
 

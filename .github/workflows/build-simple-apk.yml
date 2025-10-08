@@ -1,5 +1,5 @@
 
-name: Build Signed APK with Temp Key
+name: Build Flutter Marina Hotel APK (with admin/1234)
 
 on:
   push:

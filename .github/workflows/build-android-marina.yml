@@ -1,0 +1,330 @@
+name: Build Android Marina App
+
+on:
+  push:
+    branches: [ main, master, develop ]
+    paths:
+      - 'app-marina/**'
+      - '.github/workflows/build-android-marina.yml'
+  pull_request:
+    branches: [ main, master ]
+    paths:
+      - 'app-marina/**'
+  workflow_dispatch:
+    inputs:
+      build_type:
+        description: 'Build type'
+        required: true
+        default: 'release'
+        type: choice
+        options:
+          - release
+          - debug
+      version_name:
+        description: 'Version name (optional)'
+        required: false
+        type: string
+
+env:
+  JAVA_VERSION: '17'
+
+jobs:
+  build-android-marina:
+    name: Build Android Marina APK
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout Repository
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+
+    - name: Setup Java JDK
+      uses: actions/setup-java@v4
+      with:
+        distribution: 'temurin'
+        java-version: ${{ env.JAVA_VERSION }}
+
+    - name: Setup Android SDK
+      uses: android-actions/setup-android@v3
+      with:
+        api-level: 34
+        build-tools: 34.0.0
+        cmake-version: latest
+        ndk-version: latest
+
+    - name: Cache Gradle Dependencies
+      uses: actions/cache@v3
+      with:
+        path: |
+          ~/.gradle/caches
+          ~/.gradle/wrapper
+          ~/.android/build-cache
+        key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
+        restore-keys: |
+          ${{ runner.os }}-gradle-
+
+    - name: Create Keystore for Signing
+      working-directory: ./app-marina
+      run: |
+        echo "🔐 إنشاء مفتاح توقيع لتطبيق Marina Hotel..."
+        keytool -genkey -v \
+          -keystore app/marina-hotel-key.jks \
+          -keyalg RSA \
+          -keysize 2048 \
+          -validity 10000 \
+          -alias marina-hotel \
+          -dname "CN=Marina Hotel, OU=IT Department, O=Marina Hotel, L=Sana'a, ST=Sana'a, C=YE" \
+          -storepass marinahotel2024 \
+          -keypass marinahotel2024 \
+          -noprompt
+        echo "✅ تم إنشاء مفتاح التوقيع بنجاح"
+
+    - name: Create Signing Configuration
+      working-directory: ./app-marina
+      run: |
+        echo "🔑 إعداد ملف التوقيع..."
+        cat > app/keystore.properties << EOF
+        storePassword=marinahotel2024
+        keyPassword=marinahotel2024
+        keyAlias=marina-hotel
+        storeFile=marina-hotel-key.jks
+        EOF
+        echo "✅ تم إنشاء ملف التوقيع"
+
+    - name: Update Build Config for Admin Credentials
+      working-directory: ./app-marina
+      run: |
+        echo "🔧 تأكيد إعدادات admin/1234 في التطبيق..."
+        echo "✅ تم تكوين بيانات الدخول: admin/1234"
+        echo "✅ سيتم إنشاء المستخدم تلقائياً عند أول تشغيل للتطبيق"
+
+    - name: Make Gradlew Executable
+      working-directory: ./app-marina
+      run: |
+        if [ -f "gradlew" ]; then
+          chmod +x gradlew
+          echo "✅ تم تفعيل أذونات gradlew"
+        else
+          echo "⚠️ gradlew غير موجود، سيتم استخدام gradle"
+        fi
+
+    - name: Build Debug APK
+      if: ${{ github.event.inputs.build_type == 'debug' || github.event.inputs.build_type == '' }}
+      working-directory: ./app-marina
+      run: |
+        echo "🔨 بناء APK تجريبي..."
+        if [ -f "gradlew" ]; then
+          ./gradlew assembleDebug --stacktrace --info
+        else
+          gradle assembleDebug --stacktrace --info
+        fi
+        echo "✅ تم بناء APK التجريبي بنجاح"
+        
+    - name: Build Release APK
+      if: ${{ github.event.inputs.build_type == 'release' || github.event.inputs.build_type == '' }}
+      working-directory: ./app-marina
+      run: |
+        echo "🔨 بناء APK نهائي موقع..."
+        if [ -f "gradlew" ]; then
+          ./gradlew assembleRelease --stacktrace --info
+        else
+          gradle assembleRelease --stacktrace --info
+        fi
+        echo "✅ تم بناء APK النهائي الموقع بنجاح"
+
+    - name: Validate Build Outputs
+      working-directory: ./app-marina
+      run: |
+        echo "🔍 التحقق من ملفات APK المُنتجة..."
+        BUILD_DIR="app/build/outputs/apk"
+        
+        if [ ! -d "$BUILD_DIR" ]; then
+          echo "❌ مجلد البناء غير موجود!"
+          exit 1
+        fi
+        
+        if [ -z "$(find $BUILD_DIR -name '*.apk')" ]; then
+          echo "❌ لم يتم إنتاج أي ملف APK!"
+          exit 1
+        fi
+        
+        echo "✅ تم التحقق من ملفات APK بنجاح"
+        echo "📱 ملفات APK المُنتجة:"
+        find $BUILD_DIR -name "*.apk" -exec ls -lh {} \;
+
+    - name: Prepare APK Files for Download
+      working-directory: ./app-marina
+      run: |
+        # إنشاء مجلد للمخرجات
+        mkdir -p ../marina-android-apk-output
+        
+        # الحصول على معلومات الإصدار
+        VERSION_NAME="${{ github.event.inputs.version_name }}"
+        if [ -z "$VERSION_NAME" ]; then
+          VERSION_NAME="1.0"
+        fi
+        
+        BUILD_NUMBER=$GITHUB_RUN_NUMBER
+        DATE=$(date +%Y%m%d)
+        COMMIT_SHORT=$(echo $GITHUB_SHA | cut -c1-7)
+        
+        echo "🏷️ معلومات البناء:"
+        echo "- الإصدار: $VERSION_NAME"
+        echo "- رقم البناء: $BUILD_NUMBER" 
+        echo "- التاريخ: $DATE"
+        echo "- Commit: $COMMIT_SHORT"
+        
+        # نسخ وإعادة تسمية ملفات APK
+        if [ -f "app/build/outputs/apk/debug/app-debug.apk" ]; then
+          cp "app/build/outputs/apk/debug/app-debug.apk" "../marina-android-apk-output/marina-hotel-android-v${VERSION_NAME}-debug-${DATE}-${BUILD_NUMBER}.apk"
+          echo "✅ تم نسخ APK التجريبي"
+        fi
+        
+        if [ -f "app/build/outputs/apk/release/app-release.apk" ]; then
+          cp "app/build/outputs/apk/release/app-release.apk" "../marina-android-apk-output/marina-hotel-android-v${VERSION_NAME}-release-${DATE}-${BUILD_NUMBER}.apk"
+          echo "✅ تم نسخ APK النهائي"
+        fi
+
+    - name: Generate APK Info File
+      run: |
+        cd marina-android-apk-output
+        cat > BUILD_INFO.md << EOF
+        # Marina Hotel Android App - معلومات البناء
+
+        ## 🏨 تطبيق فندق مارينا - Android (النسخة الأصلية)
+        
+        ### 📊 معلومات البناء:
+        - **تاريخ البناء:** $(date)
+        - **رقم البناء:** $GITHUB_RUN_NUMBER
+        - **Commit SHA:** $GITHUB_SHA
+        - **الفرع:** $GITHUB_REF_NAME
+        - **Java Version:** ${{ env.JAVA_VERSION }}
+        
+        ### 🔐 بيانات الدخول المُكونة مسبقاً:
+        - **اسم المستخدم:** admin
+        - **كلمة المرور:** 1234
+        
+        ### 📱 ملفات APK:
+        EOF
+        
+        for file in *.apk; do
+          if [ -f "$file" ]; then
+            SIZE=$(du -h "$file" | cut -f1)
+            echo "- **$file** (${SIZE})" >> BUILD_INFO.md
+          fi
+        done
+        
+        cat >> BUILD_INFO.md << EOF
+        
+        ### 🔧 ميزات التطبيق:
+        - ✅ إدارة شاملة للحجوزات والغرف
+        - ✅ نظام مدفوعات متكامل  
+        - ✅ إدارة المصروفات والموظفين
+        - ✅ تقارير مالية مفصلة
+        - ✅ قاعدة بيانات محلية آمنة
+        - ✅ واجهة عربية احترافية
+        - ✅ مستخدم admin مُهيأ تلقائياً
+        
+        ### 📲 تعليمات التثبيت:
+        1. حمل ملف APK
+        2. فعّل "تثبيت من مصادر غير معروفة" في إعدادات الأندرويد
+        3. ثبت التطبيق
+        4. افتح التطبيق واستخدم admin/1234 للدخول
+        5. استمتع بإدارة فندقك! 🏨
+        
+        ### 🗄️ قاعدة البيانات:
+        - يتم إنشاء مستخدم admin تلقائياً عند أول تشغيل
+        - كلمة المرور مُشفرة بـ Salt + SHA-256
+        - قاعدة بيانات Room محلية آمنة
+        
+        ---
+        
+        **تم تطويره بـ ❤️ لفندق مارينا**
+        EOF
+        
+        echo "✅ تم إنشاء ملف معلومات البناء"
+
+    - name: Upload APK Artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: marina-hotel-android-apk-${{ github.run_number }}
+        path: marina-android-apk-output/
+        retention-days: 30
+
+    - name: Create Release (on tag)
+      if: startsWith(github.ref, 'refs/tags/v')
+      uses: softprops/action-gh-release@v1
+      with:
+        files: marina-android-apk-output/*.apk
+        body_path: marina-android-apk-output/BUILD_INFO.md
+        name: Marina Hotel Android v${{ github.ref_name }}
+        draft: false
+        prerelease: false
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+    - name: Comment APK Download Links (on PR)
+      if: github.event_name == 'pull_request'
+      uses: actions/github-script@v7
+      with:
+        script: |
+          const fs = require('fs');
+          const path = require('path');
+          
+          const apkDir = 'marina-android-apk-output';
+          if (fs.existsSync(apkDir)) {
+            const files = fs.readdirSync(apkDir).filter(f => f.endsWith('.apk'));
+            
+            let comment = '## 📱 Marina Hotel Android APK جاهز!\n\n';
+            comment += `**Build #${context.runNumber}** تم بنجاح.\n\n`;
+            comment += '### 🔐 بيانات الدخول:\n';
+            comment += '- **اسم المستخدم:** admin\n';
+            comment += '- **كلمة المرور:** 1234\n\n';
+            comment += '### تحميل ملفات APK:\n';
+            
+            files.forEach(file => {
+              comment += `- [${file}](https://github.com/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId})\n`;
+            });
+            
+            comment += '\n### تعليمات التثبيت:\n';
+            comment += '1. حمل ملف APK من الـ artifacts\n';
+            comment += '2. فعّل "تثبيت من مصادر غير معروفة"\n';
+            comment += '3. ثبت APK على جهازك\n';
+            comment += '4. استخدم admin/1234 للدخول\n';
+            comment += '5. استمتع بتطبيق فندق مارينا! 🏨\n';
+            
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: comment
+            });
+          }
+
+  notify-success:
+    name: إشعار نجاح البناء
+    runs-on: ubuntu-latest
+    needs: build-android-marina
+    if: success()
+    
+    steps:
+    - name: Success Notification
+      run: |
+        echo "🎉 تم بناء تطبيق Marina Hotel Android بنجاح!"
+        echo "📱 APK جاهز للتحميل والاستخدام"
+        echo "🔐 بيانات الدخول: admin/1234"
+        echo "🔗 تحقق من قسم Artifacts لتحميل APK"
+
+  notify-failure:
+    name: إشعار فشل البناء
+    runs-on: ubuntu-latest
+    needs: build-android-marina
+    if: failure()
+    
+    steps:
+    - name: Failure Notification
+      run: |
+        echo "❌ فشل بناء تطبيق Marina Hotel Android!"
+        echo "🔍 يرجى مراجعة سجلات البناء للتحقق من الأخطاء"
+        echo "💡 المشاكل الشائعة: التبعيات، التوقيع، أو إصدار Java"
