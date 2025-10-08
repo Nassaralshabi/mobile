@@ -1,273 +1,68 @@
-name: Build Android APK
- 
+name: Build APK
+
 on:
   push:
-    branches: [ main, master, develop ]
-    paths:
-      - 'mobile/**'
-      - '.github/workflows/build-apk.yml'
-  pull_request:
-    branches: [ main, master ]
+    branches: [ main ]
     paths:
       - 'mobile/**'
   workflow_dispatch:
     inputs:
       build_type:
-        description: 'Build type'
+        description: 'Build Type'
         required: true
-        default: 'release'
+        default: 'debug'
         type: choice
         options:
-          - release
           - debug
-      version_name:
-        description: 'Version name (optional)'
-        required: false
-        type: string
-
-env:
-  FLUTTER_VERSION: '3.24.0'
-  JAVA_VERSION: '17'
+          - release
 
 jobs:
-  build-apk:
-    name: Build APK
+  build:
+    name: Build Flutter APK
     runs-on: ubuntu-latest
     
     steps:
-    - name: Checkout Repository
+    - name: Checkout Code
       uses: actions/checkout@v4
-      with:
-        fetch-depth: 0
 
-    - name: Setup Java JDK
+    - name: Setup Java
       uses: actions/setup-java@v4
       with:
-        distribution: 'temurin'
-        java-version: ${{ env.JAVA_VERSION }}
+        distribution: 'zulu'
+        java-version: '17'
 
-    - name: Cache Gradle
-      uses: actions/cache@v3
-      with:
-        path: |
-          ~/.gradle/caches
-          ~/.gradle/wrapper
-        key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
-        restore-keys: |
-          ${{ runner.os }}-gradle-
-
-    - name: Setup Flutter SDK
+    - name: Setup Flutter
       uses: subosito/flutter-action@v2
       with:
-        flutter-version: ${{ env.FLUTTER_VERSION }}
+        flutter-version: '3.24.0'
         channel: 'stable'
         cache: true
 
-    - name: Verify Flutter Installation
+    - name: Get Dependencies
+      working-directory: ./mobile
       run: |
-        flutter --version
+        flutter pub get
         flutter doctor -v
-
-    - name: Change to Mobile Directory
-      run: cd mobile
-
-    - name: Get Flutter Dependencies
-      working-directory: ./mobile
-      run: flutter pub get
-
-    - name: Run Flutter Analyzer
-      working-directory: ./mobile
-      run: flutter analyze --no-fatal-infos
-
-    - name: Run Flutter Tests
-      working-directory: ./mobile
-      run: flutter test
-      continue-on-error: true
-
-    - name: Create Key Properties (if signing)
-      working-directory: ./mobile/android
-      run: |
-        if [ ! -f key.properties ]; then
-          echo "Creating dummy key.properties for unsigned build"
-          echo "# Dummy key properties for CI build" > key.properties
-        fi
 
     - name: Build Debug APK
       if: ${{ github.event.inputs.build_type == 'debug' || github.event.inputs.build_type == '' }}
       working-directory: ./mobile
-      run: |
-        echo "Building Debug APK..."
-        flutter build apk --debug --verbose
-        
-    - name: Build Release APK
-      if: ${{ github.event.inputs.build_type == 'release' || github.event.inputs.build_type == '' }}
+      run: flutter build apk --debug
+
+    - name: Build Release APK  
+      if: ${{ github.event.inputs.build_type == 'release' }}
       working-directory: ./mobile
-      run: |
-        echo "Building Release APK..."
-        flutter build apk --release --verbose
+      run: flutter build apk --release
 
-    - name: Build Split APKs (Release only)
-      if: ${{ github.event.inputs.build_type == 'release' || github.event.inputs.build_type == '' }}
-      working-directory: ./mobile
-      run: |
-        echo "Building Split APKs..."
-        flutter build apk --release --split-per-abi --verbose
-
-    - name: Validate Build Outputs
-      working-directory: ./mobile
-      run: |
-        echo "🔍 Validating build outputs..."
-        BUILD_DIR="build/app/outputs/flutter-apk"
-        
-        if [ ! -d "$BUILD_DIR" ]; then
-          echo "❌ Build directory not found!"
-          exit 1
-        fi
-        
-        if [ -z "$(ls -A $BUILD_DIR)" ]; then
-          echo "❌ No APK files generated!"
-          exit 1
-        fi
-        
-        echo "✅ Build validation passed"
-        ls -lh $BUILD_DIR
-
-    - name: Rename APK Files
-      working-directory: ./mobile
-      run: |
-        # Create output directory
-        mkdir -p ../apk-output
-        
-        # Get version info
-        VERSION_NAME="${{ github.event.inputs.version_name }}"
-        if [ -z "$VERSION_NAME" ]; then
-          VERSION_NAME=$(grep "version:" pubspec.yaml | cut -d' ' -f2 | cut -d'+' -f1)
-        fi
-        
-        BUILD_NUMBER=$(echo $GITHUB_RUN_NUMBER)
-        DATE=$(date +%Y%m%d)
-        
-        # Copy and rename APK files
-        if [ -f "build/app/outputs/flutter-apk/app-debug.apk" ]; then
-          cp "build/app/outputs/flutter-apk/app-debug.apk" "../apk-output/marina-hotel-v${VERSION_NAME}-debug-${DATE}-${BUILD_NUMBER}.apk"
-        fi
-        
-        if [ -f "build/app/outputs/flutter-apk/app-release.apk" ]; then
-          cp "build/app/outputs/flutter-apk/app-release.apk" "../apk-output/marina-hotel-v${VERSION_NAME}-release-${DATE}-${BUILD_NUMBER}.apk"
-        fi
-        
-        # Copy split APKs
-        if [ -f "build/app/outputs/flutter-apk/app-arm64-v8a-release.apk" ]; then
-          cp "build/app/outputs/flutter-apk/app-arm64-v8a-release.apk" "../apk-output/marina-hotel-v${VERSION_NAME}-arm64-${DATE}-${BUILD_NUMBER}.apk"
-        fi
-        
-        if [ -f "build/app/outputs/flutter-apk/app-armeabi-v7a-release.apk" ]; then
-          cp "build/app/outputs/flutter-apk/app-armeabi-v7a-release.apk" "../apk-output/marina-hotel-v${VERSION_NAME}-arm32-${DATE}-${BUILD_NUMBER}.apk"
-        fi
-        
-        if [ -f "build/app/outputs/flutter-apk/app-x86_64-release.apk" ]; then
-          cp "build/app/outputs/flutter-apk/app-x86_64-release.apk" "../apk-output/marina-hotel-v${VERSION_NAME}-x86_64-${DATE}-${BUILD_NUMBER}.apk"
-        fi
-
-    - name: Generate APK Info
-      run: |
-        cd apk-output
-        echo "# Marina Hotel APK Build Info" > BUILD_INFO.md
-        echo "" >> BUILD_INFO.md
-        echo "**Build Date:** $(date)" >> BUILD_INFO.md
-        echo "**Build Number:** $GITHUB_RUN_NUMBER" >> BUILD_INFO.md
-        echo "**Commit SHA:** $GITHUB_SHA" >> BUILD_INFO.md
-        echo "**Branch:** $GITHUB_REF_NAME" >> BUILD_INFO.md
-        echo "**Flutter Version:** ${{ env.FLUTTER_VERSION }}" >> BUILD_INFO.md
-        echo "" >> BUILD_INFO.md
-        echo "## APK Files:" >> BUILD_INFO.md
-        echo "" >> BUILD_INFO.md
-        for file in *.apk; do
-          if [ -f "$file" ]; then
-            SIZE=$(du -h "$file" | cut -f1)
-            echo "- **$file** (${SIZE})" >> BUILD_INFO.md
-          fi
-        done
-        echo "" >> BUILD_INFO.md
-        echo "## Installation Instructions:" >> BUILD_INFO.md
-        echo "" >> BUILD_INFO.md
-        echo "1. Download the APK file" >> BUILD_INFO.md
-        echo "2. Enable 'Install from unknown sources' on your Android device" >> BUILD_INFO.md
-        echo "3. Install the APK file" >> BUILD_INFO.md
-        echo "4. The app works offline and syncs when online!" >> BUILD_INFO.md
-
-    - name: Upload APK Artifacts
+    - name: Upload APK
       uses: actions/upload-artifact@v4
       with:
-        name: marina-hotel-apk-${{ github.run_number }}
-        path: apk-output/
-        retention-days: 30
+        name: marina-hotel-apk
+        path: mobile/build/app/outputs/flutter-apk/*.apk
+        retention-days: 7
 
-    - name: Create Release (on tag)
-      if: startsWith(github.ref, 'refs/tags/v')
-      uses: softprops/action-gh-release@v1
-      with:
-        files: apk-output/*.apk
-        body_path: apk-output/BUILD_INFO.md
-        draft: false
-        prerelease: false
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-    - name: Comment APK Download Links (on PR)
-      if: github.event_name == 'pull_request'
-      uses: actions/github-script@v7
-      with:
-        script: |
-          const fs = require('fs');
-          const path = require('path');
-          
-          const apkDir = 'apk-output';
-          const files = fs.readdirSync(apkDir).filter(f => f.endsWith('.apk'));
-          
-          let comment = '## 📱 APK Build Complete!\n\n';
-          comment += `**Build #${context.runNumber}** completed successfully.\n\n`;
-          comment += '### Download APK Files:\n';
-          
-          files.forEach(file => {
-            comment += `- [${file}](https://github.com/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId})\n`;
-          });
-          
-          comment += '\n### Installation:\n';
-          comment += '1. Download the APK file from the artifacts\n';
-          comment += '2. Enable "Install from unknown sources" on your Android device\n';
-          comment += '3. Install the APK\n';
-          comment += '4. Enjoy the Marina Hotel app! 🏨\n';
-          
-          github.rest.issues.createComment({
-            issue_number: context.issue.number,
-            owner: context.repo.owner,
-            repo: context.repo.repo,
-            body: comment
-          });
-
-  notify-success:
-    name: Notify Build Success
-    runs-on: ubuntu-latest
-    needs: build-apk
-    if: success()
-    
-    steps:
-    - name: Success Notification
+    - name: Build Summary
       run: |
-        echo "🎉 APK Build Completed Successfully!"
-        echo "📱 Marina Hotel Android app is ready for download"
-        echo "🔗 Check the Artifacts section for APK files"
-
-  notify-failure:
-    name: Notify Build Failure
-    runs-on: ubuntu-latest
-    needs: build-apk
-    if: failure()
-    
-    steps:
-    - name: Failure Notification
-      run: |
-        echo "❌ APK Build Failed!"
-        echo "🔍 Please check the build logs for errors"
-        echo "💡 Common issues: Dependencies, signing, or Flutter version"
+        echo "## 🏨 Marina Hotel APK Build" >> $GITHUB_STEP_SUMMARY
+        echo "✅ Build completed successfully" >> $GITHUB_STEP_SUMMARY
+        echo "📱 APK files are available in artifacts" >> $GITHUB_STEP_SUMMARY

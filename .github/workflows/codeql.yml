@@ -1,0 +1,65 @@
+name: "CodeQL Security Analysis"
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+  schedule:
+    - cron: '30 1 * * 0'
+  workflow_dispatch:
+
+jobs:
+  analyze:
+    name: Security Analysis
+    runs-on: ubuntu-latest
+    timeout-minutes: 360
+    permissions:
+      actions: read
+      contents: read
+      security-events: write
+
+    strategy:
+      fail-fast: false
+      matrix:
+        language: [ 'java' ]
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+
+    - name: Initialize CodeQL
+      uses: github/codeql-action/init@v3
+      with:
+        languages: ${{ matrix.language }}
+        queries: security-extended,security-and-quality
+
+    - name: Setup Java
+      uses: actions/setup-java@v4
+      with:
+        distribution: 'zulu'
+        java-version: '17'
+
+    - name: Setup Flutter
+      uses: subosito/flutter-action@v2
+      with:
+        flutter-version: '3.24.0'
+        channel: 'stable'
+        cache: true
+
+    - name: Build for Analysis
+      working-directory: ./mobile
+      run: |
+        flutter pub get
+        flutter build apk --debug --no-tree-shake-icons
+
+    - name: Perform CodeQL Analysis
+      uses: github/codeql-action/analyze@v3
+      with:
+        category: "/language:${{matrix.language}}"
+
+    - name: Analysis Summary
+      run: |
+        echo "## 🔍 CodeQL Security Analysis" >> $GITHUB_STEP_SUMMARY
+        echo "✅ Security scan completed for ${{ matrix.language }}" >> $GITHUB_STEP_SUMMARY
+        echo "🔐 Check Security tab for any findings" >> $GITHUB_STEP_SUMMARY
