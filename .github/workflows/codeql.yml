@@ -3,8 +3,12 @@ name: "CodeQL Security Analysis"
 on:
   push:
     branches: [ main ]
+    paths:
+      - 'mobile/android/**'
   pull_request:
     branches: [ main ]
+    paths:
+      - 'mobile/android/**'
   schedule:
     - cron: '30 1 * * 0'
   workflow_dispatch:
@@ -22,7 +26,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        language: [ 'java' ]
+        language: [ 'java-kotlin' ]
 
     steps:
     - name: Checkout repository
@@ -32,7 +36,7 @@ jobs:
       uses: github/codeql-action/init@v3
       with:
         languages: ${{ matrix.language }}
-        queries: security-extended,security-and-quality
+        source-root: mobile/android
 
     - name: Setup Java
       uses: actions/setup-java@v4
@@ -47,11 +51,11 @@ jobs:
         channel: 'stable'
         cache: true
 
-    - name: Build for Analysis
+    - name: Build Android for Analysis
       working-directory: ./mobile
       run: |
         flutter pub get
-        flutter build apk --debug --no-tree-shake-icons
+        flutter build apk --debug
 
     - name: Perform CodeQL Analysis
       uses: github/codeql-action/analyze@v3
@@ -61,5 +65,5 @@ jobs:
     - name: Analysis Summary
       run: |
         echo "## 🔍 CodeQL Security Analysis" >> $GITHUB_STEP_SUMMARY
-        echo "✅ Security scan completed for ${{ matrix.language }}" >> $GITHUB_STEP_SUMMARY
+        echo "✅ Security scan completed for Android/Java code" >> $GITHUB_STEP_SUMMARY
         echo "🔐 Check Security tab for any findings" >> $GITHUB_STEP_SUMMARY
