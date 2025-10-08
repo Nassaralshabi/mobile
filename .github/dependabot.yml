@@ -1,0 +1,52 @@
+version: 2
+updates:
+  # Flutter dependencies
+  - package-ecosystem: "pub"
+    directory: "/mobile"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "09:00"
+    open-pull-requests-limit: 5
+    labels:
+      - "dependencies"
+      - "flutter"
+    commit-message:
+      prefix: "⬆️"
+      include: "scope"
+    reviewers:
+      - "Nassaralshabi"
+
+  # Android Gradle dependencies  
+  - package-ecosystem: "gradle"
+    directory: "/app-marina"
+    schedule:
+      interval: "weekly"
+      day: "monday" 
+      time: "10:00"
+    open-pull-requests-limit: 5
+    labels:
+      - "dependencies"
+      - "android"
+    commit-message:
+      prefix: "⬆️"
+      include: "scope"
+    reviewers:
+      - "Nassaralshabi"
+
+  # GitHub Actions dependencies
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "monthly"
+      day: 1
+      time: "09:00"
+    open-pull-requests-limit: 3
+    labels:
+      - "dependencies"
+      - "github-actions"
+    commit-message:
+      prefix: "⬆️"
+      include: "scope"
+    reviewers:
+      - "Nassaralshabi"

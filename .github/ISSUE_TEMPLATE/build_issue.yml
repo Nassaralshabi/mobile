@@ -1,0 +1,171 @@
+name: 🔧 Build Issue
+description: Report issues with building APKs or CI/CD
+title: "[BUILD] "
+labels: ["build", "needs-triage"]
+assignees: []
+
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Having trouble building the Marina Hotel apps? Let us know the details!
+
+  - type: dropdown
+    id: build-type
+    attributes:
+      label: Build Type
+      description: What type of build issue are you experiencing?
+      options:
+        - Local Build (building on my machine)
+        - GitHub Actions Build (CI/CD)
+        - APK Installation Issue
+        - Gradle Build Error
+        - Flutter Build Error
+        - Dependencies Issue
+        - Other Build Issue
+    validations:
+      required: true
+
+  - type: dropdown
+    id: affected-app
+    attributes:
+      label: Affected App
+      description: Which app has the build issue?
+      options:
+        - Flutter Mobile App
+        - Android Native App (app-marina)
+        - Both Apps
+    validations:
+      required: true
+
+  - type: textarea
+    id: build-error
+    attributes:
+      label: Build Error
+      description: Copy and paste the complete error message
+      placeholder: |
+        Paste the full error output here...
+        
+        Example:
+        FAILURE: Build failed with an exception.
+        * What went wrong:
+        Execution failed for task ':app:compileDebugJavaWithJavac'.
+        > ...
+      render: shell
+    validations:
+      required: true
+
+  - type: textarea
+    id: build-command
+    attributes:
+      label: Build Command/Steps
+      description: What command or steps were you running when the error occurred?
+      placeholder: |
+        Example:
+        1. cd mobile
+        2. flutter clean
+        3. flutter pub get
+        4. flutter build apk --debug
+        
+        Or:
+        1. cd app-marina
+        2. ./gradlew clean
+        3. ./gradlew assembleDebug
+    validations:
+      required: true
+
+  - type: textarea
+    id: environment-info
+    attributes:
+      label: Environment Information
+      description: Information about your build environment
+      placeholder: |
+        - OS: [e.g. Ubuntu 22.04, Windows 11, macOS 13]
+        - Flutter Version: [run `flutter --version`]
+        - Java Version: [run `java -version`]
+        - Android SDK: [version and API levels]
+        - Gradle Version: [if applicable]
+        - IDE: [Android Studio, VS Code, etc.]
+        - Git Branch: [which branch you're building]
+      render: markdown
+    validations:
+      required: true
+
+  - type: dropdown
+    id: first-time-build
+    attributes:
+      label: Is this your first time building?
+      description: Have you successfully built this project before?
+      options:
+        - "Yes, this is my first time building"
+        - "No, I've built it successfully before"
+        - "I'm not sure"
+    validations:
+      required: true
+
+  - type: textarea
+    id: recent-changes
+    attributes:
+      label: Recent Changes
+      description: Any recent changes you made before the build started failing?
+      placeholder: |
+        - Updated dependencies
+        - Changed Android SDK version
+        - Modified build.gradle files
+        - Updated Flutter
+        - etc.
+    validations:
+      required: false
+
+  - type: dropdown
+    id: login-config
+    attributes:
+      label: Login Configuration
+      description: Are you building with the admin/1234 configuration?
+      options:
+        - "Yes, using admin/1234 configuration"
+        - "No, using different credentials"
+        - "Not sure about login configuration"
+    validations:
+      required: false
+
+  - type: textarea
+    id: attempted-solutions
+    attributes:
+      label: Attempted Solutions
+      description: What have you tried to fix this issue?
+      placeholder: |
+        - flutter clean
+        - ./gradlew clean
+        - Deleted .gradle folder
+        - Updated Android SDK
+        - Restarted IDE
+        - etc.
+    validations:
+      required: false
+
+  - type: textarea
+    id: additional-logs
+    attributes:
+      label: Additional Logs
+      description: Any other relevant logs or output
+      placeholder: |
+        Paste any additional logs, warnings, or output that might be helpful...
+      render: shell
+    validations:
+      required: false
+
+  - type: checkboxes
+    id: checklist
+    attributes:
+      label: Checklist
+      description: Please confirm the following
+      options:
+        - label: I have searched for existing build issues before creating this one
+          required: true
+        - label: I have tried basic troubleshooting (clean, pub get, etc.)
+          required: true
+        - label: I have included the complete error message above
+          required: true
+        - label: I have verified my environment meets the minimum requirements
+          required: false

@@ -1,0 +1,145 @@
+name: ✨ Feature Request
+description: Suggest a new feature for the Marina Hotel apps
+title: "[FEATURE] "
+labels: ["enhancement", "needs-triage"]
+assignees: []
+
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thank you for suggesting a new feature! Please provide details about your idea.
+
+  - type: dropdown
+    id: app-target
+    attributes:
+      label: Which app should get this feature?
+      description: Select the target app for this feature
+      options:
+        - Flutter Mobile App
+        - Android Native App (app-marina)
+        - Both Apps
+        - Build System/CI/CD
+    validations:
+      required: true
+
+  - type: textarea
+    id: feature-summary
+    attributes:
+      label: Feature Summary
+      description: A brief summary of the feature you'd like to see
+      placeholder: Summarize the feature in one sentence...
+    validations:
+      required: true
+
+  - type: textarea
+    id: problem-statement
+    attributes:
+      label: Problem Statement
+      description: What problem does this feature solve?
+      placeholder: |
+        Is your feature request related to a problem? Please describe.
+        Example: "I'm always frustrated when..."
+    validations:
+      required: true
+
+  - type: textarea
+    id: proposed-solution
+    attributes:
+      label: Proposed Solution
+      description: Describe the solution you'd like to see
+      placeholder: |
+        A clear and concise description of what you want to happen.
+        Include any specific UI/UX ideas, workflows, or technical details.
+    validations:
+      required: true
+
+  - type: dropdown
+    id: feature-category
+    attributes:
+      label: Feature Category
+      description: What type of feature is this?
+      options:
+        - Hotel Management (bookings, rooms, etc.)
+        - User Interface/Experience
+        - Authentication/Security
+        - Reporting/Analytics
+        - Mobile/App Experience
+        - Performance/Optimization
+        - Integration/API
+        - Other
+    validations:
+      required: true
+
+  - type: dropdown
+    id: priority
+    attributes:
+      label: Priority Level
+      description: How important is this feature to you?
+      options:
+        - High - Critical for daily operations
+        - Medium - Would significantly improve workflow
+        - Low - Nice to have enhancement
+    validations:
+      required: true
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternative Solutions
+      description: Describe any alternative solutions or features you've considered
+      placeholder: What other approaches could solve this problem?
+    validations:
+      required: false
+
+  - type: textarea
+    id: user-stories
+    attributes:
+      label: User Stories
+      description: Write user stories for this feature
+      placeholder: |
+        As a [user type], I want to [do something] so that [benefit/value].
+        
+        Example:
+        - As a hotel manager, I want to see room occupancy graphs so that I can optimize pricing
+        - As a front desk employee, I want quick guest check-in so that I can serve customers faster
+    validations:
+      required: false
+
+  - type: textarea
+    id: acceptance-criteria
+    attributes:
+      label: Acceptance Criteria
+      description: What criteria must be met for this feature to be considered complete?
+      placeholder: |
+        - [ ] Criteria 1
+        - [ ] Criteria 2
+        - [ ] Criteria 3
+    validations:
+      required: false
+
+  - type: textarea
+    id: additional-context
+    attributes:
+      label: Additional Context
+      description: Add any other context, mockups, or examples about the feature request
+      placeholder: |
+        - Screenshots/mockups
+        - Links to similar features in other apps
+        - Technical considerations
+        - Business requirements
+    validations:
+      required: false
+
+  - type: checkboxes
+    id: checklist
+    attributes:
+      label: Checklist
+      description: Please confirm the following
+      options:
+        - label: I have searched for existing feature requests before creating this one
+          required: true
+        - label: This feature would benefit multiple users, not just my specific use case
+          required: true
+        - label: I understand this is a suggestion and may not be implemented immediately
+          required: true

@@ -1,0 +1,119 @@
+name: 🐛 Bug Report
+description: Report a bug in the Marina Hotel apps
+title: "[BUG] "
+labels: ["bug", "needs-triage"]
+assignees: []
+
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thank you for reporting a bug! Please fill out the information below to help us resolve the issue.
+
+  - type: dropdown
+    id: app-type
+    attributes:
+      label: Which app has the bug?
+      description: Select the app where you found the bug
+      options:
+        - Flutter Mobile App
+        - Android Native App (app-marina)
+        - Both Apps
+        - GitHub Actions/Build System
+    validations:
+      required: true
+
+  - type: textarea
+    id: bug-description
+    attributes:
+      label: Bug Description
+      description: A clear and concise description of what the bug is
+      placeholder: Describe the bug...
+    validations:
+      required: true
+
+  - type: textarea
+    id: steps-to-reproduce
+    attributes:
+      label: Steps to Reproduce
+      description: Steps to reproduce the behavior
+      placeholder: |
+        1. Go to '...'
+        2. Click on '...'
+        3. Scroll down to '...'
+        4. See error
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected-behavior
+    attributes:
+      label: Expected Behavior
+      description: A clear and concise description of what you expected to happen
+      placeholder: What should happen?
+    validations:
+      required: true
+
+  - type: textarea
+    id: actual-behavior
+    attributes:
+      label: Actual Behavior
+      description: What actually happened?
+      placeholder: What actually happened?
+    validations:
+      required: true
+
+  - type: dropdown
+    id: login-credentials
+    attributes:
+      label: Login Credentials Used
+      description: Which credentials did you use when the bug occurred?
+      options:
+        - admin/1234 (default credentials)
+        - Other credentials
+        - Not applicable (bug not login-related)
+    validations:
+      required: true
+
+  - type: textarea
+    id: device-info
+    attributes:
+      label: Device Information
+      description: Information about your device
+      placeholder: |
+        - Device: [e.g. Samsung Galaxy S21]
+        - Android Version: [e.g. Android 12]
+        - App Version: [e.g. v1.0.0 or commit hash]
+    validations:
+      required: false
+
+  - type: textarea
+    id: screenshots
+    attributes:
+      label: Screenshots/Logs
+      description: If applicable, add screenshots or error logs to help explain your problem
+      placeholder: Paste screenshots or logs here...
+    validations:
+      required: false
+
+  - type: textarea
+    id: additional-context
+    attributes:
+      label: Additional Context
+      description: Add any other context about the problem here
+      placeholder: Any additional information...
+    validations:
+      required: false
+
+  - type: checkboxes
+    id: checklist
+    attributes:
+      label: Checklist
+      description: Please confirm the following
+      options:
+        - label: I have searched for existing issues before creating this one
+          required: true
+        - label: I have tested with the default admin/1234 credentials
+          required: false
+        - label: I can consistently reproduce this bug
+          required: false

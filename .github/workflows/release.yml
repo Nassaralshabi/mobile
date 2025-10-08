@@ -1,0 +1,173 @@
+name: 🚀 Release APKs
+
+on:
+  push:
+    tags:
+      - 'v*.*.*'
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Release version (e.g., v1.0.0)'
+        required: true
+        type: string
+
+env:
+  FLUTTER_VERSION: '3.24.5'
+  JAVA_VERSION: '17'
+
+jobs:
+  # ====================================
+  # Create GitHub Release with APKs
+  # ====================================
+  release:
+    name: 📦 Create Release
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: 📥 Checkout Repository
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+
+    - name: 🏷️ Get Version
+      id: version
+      run: |
+        if [[ "${{ github.event.inputs.version }}" != "" ]]; then
+          echo "VERSION=${{ github.event.inputs.version }}" >> $GITHUB_OUTPUT
+        else
+          echo "VERSION=${GITHUB_REF#refs/tags/}" >> $GITHUB_OUTPUT
+        fi
+
+    - name: ☕ Setup Java
+      uses: actions/setup-java@v4
+      with:
+        distribution: 'temurin'
+        java-version: ${{ env.JAVA_VERSION }}
+
+    - name: 🐦 Setup Flutter
+      uses: subosito/flutter-action@v2
+      with:
+        flutter-version: ${{ env.FLUTTER_VERSION }}
+        channel: 'stable'
+        cache: true
+
+    - name: 🤖 Setup Android SDK
+      uses: android-actions/setup-android@v3
+
+    - name: 📦 Cache Dependencies
+      uses: actions/cache@v4
+      with:
+        path: |
+          ~/.pub-cache
+          ~/.gradle/caches
+          ~/.gradle/wrapper
+          mobile/.dart_tool
+          app-marina/.gradle
+        key: release-${{ runner.os }}-${{ hashFiles('mobile/pubspec.lock', 'app-marina/**/*.gradle*') }}
+
+    # Build Flutter App
+    - name: 🎯 Build Flutter Release APK
+      working-directory: mobile
+      run: |
+        flutter pub get
+        yes | flutter doctor --android-licenses
+        flutter build apk --release --verbose
+
+    # Build Android Native App
+    - name: 🤖 Build Android Release APK
+      working-directory: app-marina
+      run: |
+        chmod +x ./gradlew
+        ./gradlew clean
+        ./gradlew assembleRelease --stacktrace
+
+    # Prepare Release Files
+    - name: 📁 Prepare Release Files
+      run: |
+        mkdir -p ./release-apks
+        
+        # Copy Flutter APK
+        if [ -f "mobile/build/app/outputs/flutter-apk/app-release.apk" ]; then
+          cp "mobile/build/app/outputs/flutter-apk/app-release.apk" "./release-apks/marina-flutter-${{ steps.version.outputs.VERSION }}.apk"
+        fi
+        
+        # Copy Android APK
+        if [ -f "app-marina/app/build/outputs/apk/release/app-release-unsigned.apk" ]; then
+          cp "app-marina/app/build/outputs/apk/release/app-release-unsigned.apk" "./release-apks/marina-android-${{ steps.version.outputs.VERSION }}.apk"
+        fi
+        
+        ls -la ./release-apks/
+
+    # Generate Release Notes
+    - name: 📝 Generate Release Notes
+      id: release_notes
+      run: |
+        cat > release_notes.md << 'EOF'
+        ## 🏨 Marina Hotel Mobile Apps ${{ steps.version.outputs.VERSION }}
+        
+        ### 📱 APK Files
+        - **marina-flutter-${{ steps.version.outputs.VERSION }}.apk** - Flutter mobile app
+        - **marina-android-${{ steps.version.outputs.VERSION }}.apk** - Android native app
+        
+        ### 🔐 Default Login Credentials
+        ```
+        Username: admin
+        Password: 1234
+        ```
+        
+        ### ✨ Features
+        - ✅ Hotel booking management
+        - ✅ Room management system
+        - ✅ Payment tracking
+        - ✅ Expense management
+        - ✅ Employee management
+        - ✅ Comprehensive reporting
+        - ✅ Offline support (Flutter app)
+        - ✅ Auto-admin user creation (Android app)
+        
+        ### 🛠️ Technical Details
+        - **Flutter Version**: ${{ env.FLUTTER_VERSION }}
+        - **Android Target SDK**: 34
+        - **Minimum Android Version**: API 21+ (Flutter), API 24+ (Android Native)
+        - **Architecture**: ARM64, ARM, x86_64
+        
+        ### 📱 Installation Instructions
+        1. Enable "Install from Unknown Sources" in Android settings
+        2. Download the APK file for your preferred app version
+        3. Install the APK
+        4. Launch the app and login with admin/1234
+        
+        ### 📋 What's New
+        - Configured admin/1234 default login credentials
+        - Fixed Navigation Safe Args compatibility issues
+        - Enhanced offline authentication support
+        - Improved database initialization
+        - Updated build configuration
+        
+        ---
+        **Build Date**: $(date -u '+%Y-%m-%d %H:%M:%S UTC')
+        **Commit Hash**: ${{ github.sha }}
+        EOF
+
+    # Create GitHub Release
+    - name: 🚀 Create GitHub Release
+      uses: softprops/action-gh-release@v1
+      with:
+        tag_name: ${{ steps.version.outputs.VERSION }}
+        name: Marina Hotel Apps ${{ steps.version.outputs.VERSION }}
+        body_path: release_notes.md
+        files: |
+          ./release-apks/*.apk
+        draft: false
+        prerelease: false
+        generate_release_notes: true
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+    # Upload to Artifacts as backup
+    - name: 📤 Upload Release Artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: release-apks-${{ steps.version.outputs.VERSION }}
+        path: ./release-apks/
+        retention-days: 365
