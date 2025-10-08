@@ -31,6 +31,8 @@ object NetworkClient {
     }
 
     fun createRetrofit(context: Context, preferencesManager: PreferencesManager, baseUrl: String = DEFAULT_BASE_URL): Retrofit {
+        val normalisedBaseUrl = if (baseUrl.endsWith("/")) baseUrl else "$baseUrl/"
+
         val client = OkHttpClient.Builder()
             .callTimeout(30, TimeUnit.SECONDS)
             .connectTimeout(30, TimeUnit.SECONDS)
@@ -41,7 +43,7 @@ object NetworkClient {
             .build()
 
         return Retrofit.Builder()
-            .baseUrl(baseUrl)
+            .baseUrl(normalisedBaseUrl)
             .client(client)
             .addConverterFactory(MoshiConverterFactory.create())
             .build()
