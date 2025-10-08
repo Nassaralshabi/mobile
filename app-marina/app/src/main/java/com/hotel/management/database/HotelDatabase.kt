@@ -28,6 +28,7 @@ import com.hotel.management.models.PaymentEntity
 import com.hotel.management.models.RoomEntity
 import com.hotel.management.models.SupplierEntity
 import com.hotel.management.models.UserEntity
+import com.hotel.management.utils.SecurityUtils
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 
@@ -78,9 +79,33 @@ abstract class HotelDatabase : RoomDatabase() {
                     .build()
                 INSTANCE = instance
                 scope.launch {
-                    // Pre-populate hooks if needed later.
+                    // Pre-populate admin user if it doesn't exist
+                    prepopulateDatabase(instance)
                 }
                 instance
             }
+
+        private suspend fun prepopulateDatabase(database: HotelDatabase) {
+            val userDao = database.userDao()
+            
+            // Check if admin user already exists
+            val adminUser = userDao.findByUsername("admin")
+            if (adminUser == null) {
+                // Create admin user with admin/1234 credentials
+                val salt = SecurityUtils.generateSalt()
+                val passwordHash = SecurityUtils.hashPassword("1234", salt)
+                
+                val adminEntity = UserEntity(
+                    username = "admin",
+                    passwordHash = passwordHash,
+                    salt = salt,
+                    role = "admin",
+                    displayName = "المسؤول",
+                    isActive = true
+                )
+                
+                userDao.upsert(adminEntity)
+            }
+        }
     }
 }

@@ -216,7 +216,7 @@ class _LoginScreenState extends State<LoginScreen> {
                         builder: (context, connectivity, child) {
                           return Text(
                             connectivity.isOnline
-                                ? 'اسم المستخدم: admin\nكلمة المرور: admin123'
+                                ? 'اسم المستخدم: admin\nكلمة المرور: 1234'
                                 : 'يمكنك الآن تسجيل الدخول باستخدام آخر بيانات اعتماد مستخدمة.',
                             style: TextStyle(color: Colors.blue[700]),
                           );
