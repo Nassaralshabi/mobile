@@ -59,14 +59,19 @@ jobs:
         
       # 8. Setup Keystore (if secrets are available)
       - name: Setup Keystore for Signing
-        if: ${{ secrets.KEYSTORE_BASE64 != '' }}
+        if: ${{ env.KEYSTORE_BASE64 != '' }}
+        env:
+          KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
+          KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
         run: |
           mkdir -p keystore
-          echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 -d > keystore/marina-hotel-keystore.jks
+          echo "$KEYSTORE_BASE64" | base64 -d > keystore/marina-hotel-keystore.jks
           echo "storeFile=keystore/marina-hotel-keystore.jks" >> key.properties
-          echo "storePassword=${{ secrets.KEYSTORE_PASSWORD }}" >> key.properties
-          echo "keyAlias=${{ secrets.KEY_ALIAS }}" >> key.properties
-          echo "keyPassword=${{ secrets.KEY_PASSWORD }}" >> key.properties
+          echo "storePassword=$KEYSTORE_PASSWORD" >> key.properties
+          echo "keyAlias=$KEY_ALIAS" >> key.properties
+          echo "keyPassword=$KEY_PASSWORD" >> key.properties
           
       # 9. Build Release APK (signed if keystore available)
       - name: Build Release APK
@@ -174,21 +179,24 @@ jobs:
       # 15. Build Status Summary
       - name: Build notification and summary
         if: always()
+        env:
+          BUILD_STATUS: ${{ job.status }}
+          HAS_KEYSTORE: ${{ secrets.KEYSTORE_BASE64 != '' }}
         run: |
           echo "## 🏗️ Build Summary" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "| Item | Status |" >> $GITHUB_STEP_SUMMARY
           echo "|------|--------|" >> $GITHUB_STEP_SUMMARY
-          echo "| Build Status | ${{ job.status == 'success' && '✅ Success' || '❌ Failed' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Build Status | $([ '$BUILD_STATUS' = 'success' ] && echo '✅ Success' || echo '❌ Failed') |" >> $GITHUB_STEP_SUMMARY
           echo "| Version | ${{ steps.build_info.outputs.version_name }} (${{ steps.build_info.outputs.version_code }}) |" >> $GITHUB_STEP_SUMMARY
           echo "| Build Time | ${{ steps.build_info.outputs.build_time }} |" >> $GITHUB_STEP_SUMMARY
-          echo "| Debug APK | $([ -f 'apk-outputs/*debug*.apk' ] && echo '✅ Generated' || echo '❌ Failed') |" >> $GITHUB_STEP_SUMMARY
-          echo "| Release APK | $([ -f 'apk-outputs/*release*.apk' ] && echo '✅ Generated' || echo '❌ Failed') |" >> $GITHUB_STEP_SUMMARY
-          echo "| Signing | ${{ secrets.KEYSTORE_BASE64 != '' && '🔐 Signed' || '⚠️ Unsigned' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Debug APK | $([ -f apk-outputs/*debug*.apk ] && echo '✅ Generated' || echo '❌ Failed') |" >> $GITHUB_STEP_SUMMARY
+          echo "| Release APK | $([ -f apk-outputs/*release*.apk ] && echo '✅ Generated' || echo '❌ Failed') |" >> $GITHUB_STEP_SUMMARY
+          echo "| Signing | $([ '$HAS_KEYSTORE' = 'true' ] && echo '🔐 Signed' || echo '⚠️ Unsigned') |" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "**Artifacts:** Check the Actions artifacts section to download APK files" >> $GITHUB_STEP_SUMMARY
           
-          if [ "${{ job.status }}" = "success" ]; then
+          if [ "$BUILD_STATUS" = "success" ]; then
             echo "🎉 Build completed successfully!"
             echo "📦 APK files are ready for download"
           else
