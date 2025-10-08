@@ -1,0 +1,64 @@
+name: APK Build Working
+
+on:
+  workflow_dispatch:
+    inputs:
+      build_type:
+        description: 'Build Type'
+        default: 'debug'
+        type: choice
+        options:
+          - debug
+          - release
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v4
+    
+    - name: Setup Java
+      uses: actions/setup-java@v4
+      with:
+        distribution: 'zulu'
+        java-version: '17'
+    
+    - name: Setup Flutter Latest
+      uses: subosito/flutter-action@v2
+      with:
+        flutter-version: '3.24.5'
+        channel: 'stable'
+        cache: true
+        
+    - name: Verify Setup
+      run: |
+        java -version
+        flutter --version
+        flutter doctor --android-licenses || true
+        
+    - name: Get Dependencies 
+      run: |
+        cd mobile
+        flutter pub get
+        
+    - name: Build APK
+      run: |
+        cd mobile
+        if [ "${{ github.event.inputs.build_type }}" = "release" ]; then
+          flutter build apk --release
+        else
+          flutter build apk --debug
+        fi
+        
+    - name: List APK Files
+      run: |
+        find mobile/build/app/outputs/flutter-apk/ -name "*.apk" -exec ls -lh {} \;
+        
+    - name: Upload APK
+      uses: actions/upload-artifact@v4
+      with:
+        name: marina-hotel-apk-working
+        path: mobile/build/app/outputs/flutter-apk/*.apk
+        retention-days: 7
