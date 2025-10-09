@@ -12,6 +12,8 @@ on:
 env:
   FLUTTER_VERSION: 3.24.3
   ANDROID_NDK_VERSION: 25.2.9519653
+  ANDROID_SDK_ROOT: /usr/local/lib/android/sdk
+  ANDROID_HOME: /usr/local/lib/android/sdk
 
 jobs:
   build:
@@ -30,15 +32,73 @@ jobs:
           flutter-version: ${{ env.FLUTTER_VERSION }}
           channel: stable
       - name: Accept Android licenses
-        run: yes | flutter doctor --android-licenses
+        shell: bash
+        run: |
+          set -euo pipefail
+          sdk_root="${ANDROID_SDK_ROOT:-$ANDROID_HOME}"
+          sdkmanager_path="$sdk_root/cmdline-tools/latest/bin/sdkmanager"
+          if [ ! -x "$sdkmanager_path" ]; then
+            echo "Unable to locate sdkmanager at $sdkmanager_path" >&2
+            exit 1
+          fi
+          if ! yes | "$sdkmanager_path" --licenses >/dev/null; then
+            echo "Retrying license acceptance through flutter doctor..." >&2
+            yes | flutter doctor --android-licenses
+          fi
       - name: Install dependencies
         run: flutter pub get
       - name: Install Android NDK
-        run: yes | sdkmanager "ndk;${{ env.ANDROID_NDK_VERSION }}"
+        shell: bash
+        run: |
+          set -euo pipefail
+          sdk_root="${ANDROID_SDK_ROOT:-$ANDROID_HOME}"
+          sdkmanager_path="$sdk_root/cmdline-tools/latest/bin/sdkmanager"
+          if [ ! -x "$sdkmanager_path" ]; then
+            echo "Unable to locate sdkmanager at $sdkmanager_path" >&2
+            exit 1
+          fi
+          "$sdkmanager_path" --install "ndk;${ANDROID_NDK_VERSION}" --sdk_root="$sdk_root"
+          ndk_dir="$sdk_root/ndk/${ANDROID_NDK_VERSION}"
+          if [ ! -d "$ndk_dir" ]; then
+            echo "NDK install missing at $ndk_dir" >&2
+            exit 1
+          fi
+          {
+            echo "ANDROID_NDK_HOME=$ndk_dir"
+            echo "NDK_HOME=$ndk_dir"
+          } >> "$GITHUB_ENV"
       - name: Build debug APK
         run: flutter build apk --debug
+      - name: Build release APK
+        run: flutter build apk --release
+      - name: Build release App Bundle
+        run: flutter build appbundle --release
+      - name: Verify build artifacts
+        shell: bash
+        run: |
+          set -euo pipefail
+          for file in \
+            build/app/outputs/flutter-apk/app-debug.apk \
+            build/app/outputs/flutter-apk/app-release.apk \
+            build/app/outputs/bundle/release/app-release.aab
+          do
+            if [ ! -f "$file" ]; then
+              echo "Missing artifact: $file" >&2
+              exit 1
+            fi
+          done
       - name: Upload debug APK artifact
         uses: actions/upload-artifact@v4
         with:
           name: app-debug-apk
           path: build/app/outputs/flutter-apk/app-debug.apk
+      - name: Upload release APK artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: app-release-apk
+          path: build/app/outputs/flutter-apk/app-release.apk
+      - name: Upload release AAB artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: app-release-aab
+          path: build/app/outputs/bundle/release/app-release.aab
