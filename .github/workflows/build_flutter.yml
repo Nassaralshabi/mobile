@@ -1,0 +1,44 @@
+name: Build Flutter
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+  workflow_dispatch:
+
+env:
+  FLUTTER_VERSION: 3.24.3
+  ANDROID_NDK_VERSION: 25.2.9519653
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          channel: stable
+      - name: Accept Android licenses
+        run: yes | flutter doctor --android-licenses
+      - name: Install dependencies
+        run: flutter pub get
+      - name: Install Android NDK
+        run: yes | sdkmanager "ndk;${{ env.ANDROID_NDK_VERSION }}"
+      - name: Build debug APK
+        run: flutter build apk --debug
+      - name: Upload debug APK artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: app-debug-apk
+          path: build/app/outputs/flutter-apk/app-debug.apk
