@@ -1,4 +1,6 @@
 name: 🏪 Build AAB for Google Play Store
+permissions:
+  contents: read
 
 on:
   push:
