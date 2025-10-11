@@ -1,310 +1,117 @@
-name: 🚀 Build Signed APK - Enhanced
+name: 📱 Build Signed Flutter APK (Enhanced)
 
 on:
-  push:
-    branches: [ main, develop ]
-    paths:
-      - 'mobile/**'
-      - '.github/workflows/build-signed-apk-enhanced.yml'
-  pull_request:
-    branches: [ main, develop ]
-    paths:
-      - 'mobile/**'
-      - '.github/workflows/build-signed-apk-enhanced.yml'
-  release:
-    types: [ published ]
   workflow_dispatch:
     inputs:
       build_type:
-        description: 'Build type'
+        description: "نوع البناء الذي تريد إنشاءه (debug / release / both)"
         required: true
-        default: 'both'
+        default: "both"
         type: choice
         options:
           - debug
           - release
           - both
-      create_release:
-        description: 'Create GitHub Release'
-        required: false
-        default: false
-        type: boolean
 
 env:
-  FLUTTER_VERSION: '3.24.5'
+  FLUTTER_VERSION: '3.24.3'
   JAVA_VERSION: '17'
-  ANDROID_API_LEVEL: '34'
+  ANDROID_API_LEVEL: 34
   ANDROID_BUILD_TOOLS_VERSION: '34.0.0'
-  ANDROID_NDK_VERSION: '25.2.9519653'
-  
-  APP_NAME: 'Marina Hotel'
-  APP_PACKAGE: 'com.marinahotel.mobile'
-  APP_VERSION: '1.0.0'
-  APP_VERSION_CODE: '1'
+  ANDROID_NDK_VERSION: '26.1.10909125'
+  KEYSTORE_FILE: 'android/app/marina-hotel-key.jks'
+  KEYSTORE_ALIAS: 'marina_key'
+  KEYSTORE_PASSWORD: 'Marina@2025'
+  KEY_PASSWORD: 'Marina@2025'
 
 jobs:
-  # ====================================
-  # Code Quality Checks
-  # ====================================
-  quality-checks:
-    name: 🔍 Code Quality Checks
+  build:
     runs-on: ubuntu-latest
-    if: github.event_name != 'release'
-    
-    steps:
-    - name: 📥 Checkout Repository
-      uses: actions/checkout@v4
-      with:
-        fetch-depth: 0
-
-    - name: 🐦 Setup Flutter
-      uses: subosito/flutter-action@v2
-      with:
-        flutter-version: ${{ env.FLUTTER_VERSION }}
-        channel: 'stable'
-        cache: true
-
-    - name: 📦 Install Dependencies
-      working-directory: mobile
-      run: |
-        flutter clean
-        flutter pub get
-
-    - name: 🔍 Run Flutter Analyze
-      working-directory: mobile
-      run: flutter analyze || true
-
-    - name: 🧪 Run Tests
-      working-directory: mobile
-      run: flutter test --coverage || true
-
-    - name: 📊 Upload Coverage
-      uses: codecov/codecov-action@v3
-      with:
-        file: mobile/coverage/lcov.info
-        flags: mobile
-        name: mobile-coverage
-
-  # ====================================
-  # Build Flutter APK
-  # ====================================
-  build-flutter-apk:
-    name: 🎯 Build Flutter APK
-    runs-on: ubuntu-latest
-    needs: [quality-checks]
-    if: always() && (needs.quality-checks.result == 'success' || needs.quality-checks.result == 'skipped')
-    
     strategy:
       matrix:
-        build_type: ${{ fromJSON('["' + (github.event.inputs.build_type == 'both' && 'debug","release' || github.event.inputs.build_type) + '"]') }}
-        include:
-          - build_type: debug
-            apk_suffix: debug
-            minify: false
-          - build_type: release
-            apk_suffix: release
-            minify: true
-    
+        build_type: ${{ github.event.inputs.build_type == 'both' && fromJSON('["debug","release"]') || fromJSON(format('["{0}"]', github.event.inputs.build_type)) }}
+
     steps:
-    - name: 📥 Checkout Repository
-      uses: actions/checkout@v4
-      with:
-        fetch-depth: 0
+      - name: 🧾 Checkout Repository
+        uses: actions/checkout@v4
 
-    - name: ☕ Setup Java
-      uses: actions/setup-java@v4
-      with:
-        distribution: 'temurin'
-        java-version: ${{ env.JAVA_VERSION }}
+      - name: ☕ Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: ${{ env.JAVA_VERSION }}
 
-    - name: 🐦 Setup Flutter
-      uses: subosito/flutter-action@v2
-      with:
-        flutter-version: ${{ env.FLUTTER_VERSION }}
-        channel: 'stable'
-        cache: true
+      - name: 🐦 Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          channel: 'stable'
+          cache: true
 
-    - name: 🤖 Setup Android SDK
-      uses: android-actions/setup-android@v3
-      with:
-        api-level: ${{ env.ANDROID_API_LEVEL }}
-        build-tools: ${{ env.ANDROID_BUILD_TOOLS_VERSION }}
-        ndk: ${{ env.ANDROID_NDK_VERSION }}
+      - name: 🤖 Setup Android SDK
+        uses: android-actions/setup-android@v3
+        with:
+          api-level: ${{ env.ANDROID_API_LEVEL }}
+          build-tools: ${{ env.ANDROID_BUILD_TOOLS_VERSION }}
+          ndk: ${{ env.ANDROID_NDK_VERSION }}
 
-    - name: 📦 Cache Dependencies
-      uses: actions/cache@v4
-      with:
-        path: |
-          ~/.pub-cache
-          ~/.gradle/caches
-          ~/.gradle/wrapper
-          mobile/.dart_tool
-        key: flutter-${{ runner.os }}-${{ hashFiles('mobile/pubspec.lock') }}
-        restore-keys: |
-          flutter-${{ runner.os }}-
+      - name: 🧹 Flutter Clean
+        run: flutter clean
 
-    - name: 🔧 Install Dependencies
-      working-directory: mobile
-      run: |
-        flutter clean
-        flutter pub get
-        flutter doctor -v
+      - name: 📦 Get Dependencies
+        run: flutter pub get
 
-    - name: 📄 Accept Android Licenses
-      run: yes | flutter doctor --android-licenses
+      - name: 🧠 Analyze Code
+        run: flutter analyze || true
 
-    - name: 🔑 Generate Keystore
-      working-directory: mobile
-      run: |
-        if [ ! -f "android/app/marina-hotel-key.jks" ]; then
-          echo "Generating keystore for signing..."
-          keytool -genkey -v \
-            -keystore android/app/marina-hotel-key.jks \
-            -keyalg RSA \
-            -keysize 2048 \
-            -validity 10000 \
-            -alias marina-hotel \
-            -storepass marinahotel2024 \
-            -keypass marinahotel2024 \
-            -dname "CN=Marina Hotel, OU=Mobile Development, O=Marina Hotel, L=Sanaa, ST=Sanaa, C=YE"
-        fi
-
-    - name: 🔧 Configure Signing
-      working-directory: mobile
-      run: |
-        cat > android/key.properties << EOF
-        storePassword=marinahotel2024
-        keyPassword=marinahotel2024
-        keyAlias=marina-hotel
-        storeFile=android/app/marina-hotel-key.jks
-        EOF
-
-    - name: 🏗️ Build APK
-      working-directory: mobile
-      run: |
-        echo "Building Flutter ${{ matrix.build_type }} APK..."
-        if [ "${{ matrix.build_type }}" = "release" ]; then
-          flutter build apk --release --split-per-abi --verbose
-        else
-          flutter build apk --debug --verbose
-        fi
-        ls -la build/app/outputs/flutter-apk/
-
-    - name: 📊 APK Analysis
-      working-directory: mobile
-      run: |
-        echo "=== APK Build Analysis ==="
-        find build/app/outputs/flutter-apk/ -name "*.apk" -exec ls -lh {} \; | while read line; do
-          echo "📱 $line"
-        done
-        
-        TOTAL_SIZE=$(find build/app/outputs/flutter-apk/ -name "*.apk" -exec stat -c%s {} \; | awk '{sum+=$1} END {print sum}')
-        echo "📊 Total APK size: $(numfmt --to=iec $TOTAL_SIZE)"
-
-    - name: 🏷️ Rename APK Files
-      working-directory: mobile
-      run: |
-        mkdir -p ./apks-renamed
-        TIMESTAMP=$(date +%Y%m%d-%H%M%S)
-        VERSION="${{ env.APP_VERSION }}"
-        
-        find build/app/outputs/flutter-apk/ -name "*.apk" | while read apk_file; do
-          filename=$(basename "$apk_file")
-          if [[ "$filename" == *"universal"* ]]; then
-            new_name="marina-hotel-${VERSION}-universal-${TIMESTAMP}.apk"
-          elif [[ "$filename" == *"arm64-v8a"* ]]; then
-            new_name="marina-hotel-${VERSION}-arm64-${TIMESTAMP}.apk"
-          elif [[ "$filename" == *"armeabi-v7a"* ]]; then
-            new_name="marina-hotel-${VERSION}-arm32-${TIMESTAMP}.apk"
-          elif [[ "$filename" == *"x86_64"* ]]; then
-            new_name="marina-hotel-${VERSION}-x86_64-${TIMESTAMP}.apk"
-          else
-            new_name="marina-hotel-${VERSION}-${matrix.build_type}-${TIMESTAMP}.apk"
+      - name: 🔐 Create Keystore (if not exists)
+        run: |
+          if [ ! -f "${{ env.KEYSTORE_FILE }}" ]; then
+            keytool -genkey -v \
+              -keystore ${{ env.KEYSTORE_FILE }} \
+              -keyalg RSA -keysize 2048 -validity 10000 \
+              -alias ${{ env.KEYSTORE_ALIAS }} \
+              -storepass ${{ env.KEYSTORE_PASSWORD }} \
+              -keypass ${{ env.KEY_PASSWORD }} \
+              -dname "CN=Marina Hotel, OU=DevOps, O=Marina Hotel, L=Aden, S=Aden, C=YE"
           fi
-          cp "$apk_file" "./apks-renamed/$new_name"
-          echo "✅ Renamed: $filename -> $new_name"
-        done
-        ls -la ./apks-renamed/
 
-    - name: 📤 Upload APK Artifacts
-      uses: actions/upload-artifact@v4
-      with:
-        name: marina-hotel-${{ matrix.build_type }}-apks-${{ github.sha }}
-        path: mobile/apks-renamed/*.apk
-        retention-days: 30
+      - name: 🧾 Generate key.properties
+        run: |
+          echo "storePassword=${{ env.KEYSTORE_PASSWORD }}" > android/key.properties
+          echo "keyPassword=${{ env.KEY_PASSWORD }}" >> android/key.properties
+          echo "keyAlias=${{ env.KEYSTORE_ALIAS }}" >> android/key.properties
+          echo "storeFile=${{ env.KEYSTORE_FILE }}" >> android/key.properties
 
-  # ====================================
-  # Create GitHub Release
-  # ====================================
-  create-release:
-    name: 📦 Create GitHub Release
-    runs-on: ubuntu-latest
-    needs: [build-flutter-apk]
-    if: |
-      always() && 
-      (needs.build-flutter-apk.result == 'success') && 
-      (github.event_name == 'release' || github.event.inputs.create_release == 'true' || contains(github.ref, 'refs/tags/'))
+      - name: 🏗️ Build APK (${{ matrix.build_type }})
+        run: |
+          if [ "${{ matrix.build_type }}" == "release" ]; then
+            flutter build apk --release
+          else
+            flutter build apk --debug
+          fi
 
-    steps:
-    - name: 📥 Checkout Repository
-      uses: actions/checkout@v4
-      with:
-        fetch-depth: 0
+      - name: 📦 Rename APK
+        run: |
+          mkdir -p build/apk_output
+          cp build/app/outputs/flutter-apk/app-${{ matrix.build_type }}.apk build/apk_output/marina-hotel-${{ matrix.build_type }}.apk
 
-    - name: 📥 Download APK Artifacts
-      uses: actions/download-artifact@v4
-      with:
-        path: ./apks
-        pattern: marina-hotel-*-apks-*
+      - name: 🚀 Upload APK Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: marina-hotel-${{ matrix.build_type }}-apk
+          path: build/apk_output/marina-hotel-${{ matrix.build_type }}.apk
 
-    - name: 📁 Prepare Release Files
-      run: |
-        mkdir -p ./release-files
-        find ./apks -name "*.apk" -exec cp {} ./release-files/ \;
-        cd ./release-files
-        sha256sum *.apk > checksums.txt
-        ls -la
-        cat checksums.txt
+      - name: 🧾 Generate Build Report
+        run: |
+          echo "🔹 Build Type: ${{ matrix.build_type }}" > build_report.txt
+          echo "🔹 Flutter Version: ${{ env.FLUTTER_VERSION }}" >> build_report.txt
+          echo "🔹 Java Version: ${{ env.JAVA_VERSION }}" >> build_report.txt
+          echo "🔹 Android SDK: ${{ env.ANDROID_API_LEVEL }}" >> build_report.txt
+          echo "✅ Build completed successfully!" >> build_report.txt
 
-    - name: 📝 Generate Release Notes
-      run: |
-        cat > release_notes.md << 'EOF'
-        ## 🏨 Marina Hotel Mobile App
-        
-        **Default Login Credentials**
-        ```
-        Username: admin
-        Password: 1234
-        ```
-        **Features**
-        - Booking management, payments, reports, offline sync, etc.
-        EOF
-
-    - name: 🚀 Create GitHub Release
-      uses: softprops/action-gh-release@v1
-      with:
-        name: Marina Hotel App Release
-        body_path: release_notes.md
-        files: |
-          ./release-files/*.apk
-          ./release-files/checksums.txt
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-  # ====================================
-  # Build Summary
-  # ====================================
-  build-summary:
-    name: 📊 Build Summary
-    runs-on: ubuntu-latest
-    needs: [quality-checks, build-flutter-apk, create-release]
-    if: always()
-    
-    steps:
-    - name: 📊 Generate Summary
-      run: |
-        echo "## 🏨 Marina Hotel APK Build Summary" >> $GITHUB_STEP_SUMMARY
-        echo "| Component | Status |" >> $GITHUB_STEP_SUMMARY
-        echo "| Code Quality | ${{ needs.quality-checks.result }} |" >> $GITHUB_STEP_SUMMARY
-        echo "| APK Build | ${{ needs.build-flutter-apk.result }} |" >> $GITHUB_STEP_SUMMARY
-        echo "| Release | ${{ needs.create-release.result }} |" >> $GITHUB_STEP_SUMMARY
+      - name: 📤 Upload Build Report
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-report-${{ matrix.build_type }}
+          path: build_report.txt
