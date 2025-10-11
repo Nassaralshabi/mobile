@@ -1,204 +1,240 @@
-# 🤖 GitHub Actions Workflows
+# 🚀 GitHub Actions Workflows for Marina Hotel Mobile App
 
-هذا المجلد يحتوي على جميع الـ workflows المطلوبة لبناء واختبار تطبيقات Marina Hotel تلقائياً.
+This directory contains comprehensive GitHub Actions workflows for building, testing, and releasing the Marina Hotel Mobile App.
 
-## 📋 الـ Workflows المتاحة
+## 📁 Available Workflows
 
-### 1. 📱 Build APKs (`build-apks.yml`)
-**الغرض**: بناء ملفات APK لكلا التطبيقين تلقائياً
+### 1. 🎯 Enhanced APK Building (`build-signed-apk-enhanced.yml`)
+**Purpose**: Build signed APK files with automatic keystore generation and comprehensive quality checks.
 
-**متى يعمل**:
-- عند Push لـ branches: `main`, `develop`, `capy/**`
-- عند فتح Pull Request
-- يدوياً من GitHub Actions tab
+**Triggers**:
+- Push to `main` or `develop` branches
+- Pull requests to `main` or `develop` branches
+- Manual dispatch with build type selection
+- Release events
 
-**المخرجات**:
-- `flutter-apks-{sha}` - ملفات Flutter APK
-- `android-apks-{sha}` - ملفات Android APK  
-- `marina-hotel-apks` - جميع الملفات مجمعة مع README
+**Features**:
+- ✅ Automatic keystore generation and APK signing
+- ✅ Split APK support (Universal, ARM64, ARM32, x86_64)
+- ✅ Code quality checks (Flutter analyze, tests, coverage)
+- ✅ Comprehensive build analysis and reporting
+- ✅ Automatic GitHub release creation
+- ✅ File integrity verification with checksums
 
-**الميزات**:
-- ✅ بناء debug و release APKs
-- ✅ Cache للتسريع
-- ✅ تسمية تلقائية للملفات
-- ✅ معلومات شاملة عن البناء
-- ✅ رفع الملفات لمدة 30-90 يوم
+**Outputs**:
+- Debug and Release APK files
+- Architecture-specific APKs for smaller download sizes
+- Universal APK for maximum compatibility
+- GitHub Release with detailed changelog
 
-### 2. 🚀 Release APKs (`release.yml`)
-**الغرض**: إنشاء إصدارات رسمية مع ملفات APK
+### 2. 🏪 Play Store AAB Building (`build-aab-playstore.yml`)
+**Purpose**: Build Android App Bundle (AAB) files specifically for Google Play Store upload.
 
-**متى يعمل**:
-- عند إنشاء Git tag بصيغة `v*.*.*` (مثل v1.0.0)
-- يدوياً مع تحديد رقم الإصدار
+**Triggers**:
+- Push to version tags (`v*.*.*`)
+- Push to release branches (`release-*`)
+- Manual dispatch with version input
 
-**المخرجات**:
-- GitHub Release مع ملفات APK مرفقة
-- Release notes تلقائية
-- ملفات APK بأسماء تحتوي على رقم الإصدار
+**Features**:
+- ✅ Production keystore generation
+- ✅ AAB file optimization for Play Store
+- ✅ Play Store metadata generation
+- ✅ Comprehensive release notes
+- ✅ File integrity verification
 
-**الميزات**:
-- ✅ إصدارات رسمية على GitHub
-- ✅ Release notes تلقائية
-- ✅ تحميل مباشر للـ APKs
-- ✅ أرشفة طويلة المدى
+**Outputs**:
+- Signed AAB file ready for Play Store upload
+- Play Store metadata and documentation
+- GitHub Release with upload instructions
 
-### 3. 🧪 Tests & Code Quality (`tests.yml`)
-**الغرض**: اختبار جودة الكود والتأكد من سلامة التطبيقات
+### 3. 📱 Existing APK Building (`build-apks.yml`)
+**Purpose**: Build both Flutter and Android native APKs with basic functionality.
 
-**متى يعمل**:
-- مع كل Push و Pull Request
-- يدوياً للاختبارات الشاملة
+**Features**:
+- ✅ Flutter app building
+- ✅ Android native app building
+- ✅ Combined artifact creation
+- ✅ Basic build reporting
 
-**الاختبارات المتضمنة**:
-- **Flutter Tests**: تحليل الكود، الفورمات، الاختبارات
-- **Android Tests**: Lint، Unit tests، Compilation
-- **Login Tests**: التحقق من تكوين admin/1234
-- **Security Scan**: فحص أمني أساسي
-- **Build Check**: التأكد من بناء التطبيقات
+### 4. 🚀 Release Management (`release.yml`)
+**Purpose**: Create GitHub releases with APK files for distribution.
 
-### 4. 🔄 PR Checks (`pr-checks.yml`)
-**الغرض**: فحص Pull Requests تلقائياً
+**Features**:
+- ✅ Automatic release creation on tags
+- ✅ Manual release creation
+- ✅ Combined Flutter and Android APKs
+- ✅ Release notes generation
 
-**الميزات**:
-- ✅ تحليل تلقائي للـ PR
-- ✅ بناء سريع للتحقق
-- ✅ فحص جودة الكود
-- ✅ تعليقات تلقائية
-- ✅ إضافة Labels تلقائية
-- ✅ التحقق من حفظ إعدادات admin/1234
+## 🚀 Quick Start Guide
 
-## 🔐 إعدادات تسجيل الدخول
+### For Development Testing
+1. **Push your changes** to `main` or `develop` branch
+2. **Wait for workflow completion** (5-10 minutes)
+3. **Download APKs** from the Artifacts section
+4. **Install and test** on your Android device
 
-جميع الـ workflows تتحقق من أن التطبيقات مُكونة بشكل صحيح لاستخدام:
-- **اسم المستخدم**: `admin`
-- **كلمة المرور**: `1234`
+### For Production Release
+1. **Create a version tag**:
+   ```bash
+   git tag v1.0.0
+   git push origin v1.0.0
+   ```
+2. **Wait for workflows to complete**
+3. **Download APKs** from GitHub Releases
+4. **Distribute** to users or upload to app stores
 
-## 📥 كيفية تحميل ملفات APK
+### For Play Store Upload
+1. **Create a release tag**:
+   ```bash
+   git tag v1.0.0
+   git push origin v1.0.0
+   ```
+2. **Wait for AAB workflow completion**
+3. **Download AAB file** from GitHub Releases
+4. **Upload to Google Play Console**
 
-### من Build العادي:
-1. اذهب إلى **Actions** tab في GitHub
-2. اختر أي workflow run ناجح  
-3. scroll down إلى **Artifacts** section
-4. حمّل `marina-hotel-apks`
+## 📱 APK Types Explained
 
-### من Release:
-1. اذهب إلى **Releases** في الـ repository
-2. اختر أحدث release
-3. حمّل الملفات من **Assets** section
+### Universal APK
+- **File**: `marina-hotel-*-universal-*.apk`
+- **Size**: ~25-30 MB
+- **Compatibility**: All Android devices
+- **Use Case**: Direct distribution, maximum compatibility
 
-## ⚙️ متطلبات البيئة
+### Architecture-Specific APKs
+- **ARM64**: `marina-hotel-*-arm64-*.apk` (~20-25 MB)
+  - Modern 64-bit ARM devices (recommended)
+- **ARM32**: `marina-hotel-*-arm32-*.apk` (~18-23 MB)
+  - Older 32-bit ARM devices
+- **x86_64**: `marina-hotel-*-x86_64-*.apk` (~22-27 MB)
+  - x86_64 devices and emulators
 
-الـ workflows تستخدم:
-- **Flutter**: v3.24.5
-- **Java**: v17 (Temurin)
-- **Android SDK**: API 34
-- **Build Tools**: 34.0.0
-- **Runner**: Ubuntu Latest
+### Android App Bundle (AAB)
+- **File**: `marina-hotel-*-playstore-*.aab`
+- **Size**: ~20-25 MB (optimized)
+- **Compatibility**: Google Play Store only
+- **Use Case**: Play Store upload, automatic optimization
 
-## 🚀 كيفية تشغيل الـ Workflows
+## 🔐 Security Features
 
-### تلقائياً:
-- **Push** لأي branch مدعوم → يشغل Build + Tests
-- **PR** لـ main/develop → يشغل PR Checks
-- **Git Tag** v*.*.* → يشغل Release
+### Automatic Signing
+- **Keystore Generation**: Automatic RSA 2048-bit keystore creation
+- **Validity**: 10,000 days (27+ years)
+- **Security**: Strong encryption and secure key management
+- **No Manual Setup**: No need to manage keystores manually
 
-### يدوياً:
-1. اذهب إلى **Actions** tab
-2. اختر الـ workflow المطلوب
-3. اضغط **Run workflow**
-4. اختر الإعدادات المطلوبة
+### Code Protection
+- **Obfuscation**: Release builds are obfuscated
+- **Minification**: Code and resources are minified
+- **ProGuard**: Additional protection rules applied
+- **Debug Symbols**: Available for crash analysis
 
-## 🔄 الـ Workflow Flow
+## 📊 Build Monitoring
 
-```mermaid
-graph TD
-    A[Push/PR] --> B{Changed Files?}
-    B -->|Flutter| C[Build Flutter APK]
-    B -->|Android| D[Build Android APK]
-    B -->|Both| E[Build Both APKs]
-    C --> F[Run Tests]
-    D --> F
-    E --> F
-    F --> G[Upload Artifacts]
-    G --> H{Is Tag?}
-    H -->|Yes| I[Create Release]
-    H -->|No| J[Done]
-    I --> J
+### Workflow Status
+- 🟢 **Success**: Build completed successfully
+- 🟡 **In Progress**: Build is running
+- 🔴 **Failed**: Build failed (check logs)
+- ⏭️ **Skipped**: Build was skipped (check conditions)
+
+### Build Logs
+- **Code Quality**: Flutter analyze, tests, coverage
+- **Build Process**: Detailed build steps and timing
+- **APK Analysis**: File sizes and optimization details
+- **Error Handling**: Clear error messages and solutions
+
+## 🛠️ Configuration
+
+### Environment Variables
+```yaml
+FLUTTER_VERSION: '3.24.5'          # Flutter SDK version
+JAVA_VERSION: '17'                  # Java version
+ANDROID_API_LEVEL: '34'            # Target Android API level
+ANDROID_BUILD_TOOLS_VERSION: '34.0.0'  # Build tools version
 ```
 
-## 📊 تقارير ونتائج
+### App Configuration
+```yaml
+APP_NAME: 'Marina Hotel'           # App display name
+APP_PACKAGE: 'com.marinahotel.mobile'  # Package identifier
+APP_VERSION: '1.0.0'               # Version name
+APP_VERSION_CODE: '1'              # Version code
+```
 
-كل workflow ينتج:
-- **Summary Report** في GitHub Actions
-- **Artifacts** للتحميل  
-- **Logs** مفصلة لكل خطوة
-- **Notifications** في حالة الفشل
+## 🔧 Troubleshooting
 
-## 🛠 استكشاف الأخطاء
+### Common Issues
 
-### إذا فشل البناء:
-1. تحقق من الـ logs في GitHub Actions
-2. تأكد من أن الكود يعمل محلياً
-3. تحقق من إعدادات الـ environment variables
+#### Build Fails
+1. **Check Flutter version compatibility**
+2. **Verify pubspec.yaml dependencies**
+3. **Check Android SDK setup**
+4. **Review build logs for specific errors**
 
-### إذا لم تظهر الـ Artifacts:
-1. تأكد من أن البناء اكتمل بنجاح
-2. تحقق من الـ retention period (30-90 يوم)
-3. تأكد من الصلاحيات المطلوبة
+#### APK Installation Issues
+1. **Enable "Unknown Sources"** in Android settings
+2. **Use Universal APK** for maximum compatibility
+3. **Check Android version** (requires API 21+)
+4. **Verify APK integrity** using checksums
 
-### إذا فشل الـ Release:
-1. تأكد من صيغة الـ tag صحيحة (v1.0.0)
-2. تحقق من صلاحيات GITHUB_TOKEN
-3. تأكد من أن البناء نجح أولاً
+#### Play Store Upload Issues
+1. **Use AAB file** (not APK) for Play Store
+2. **Check package name** matches Play Console
+3. **Verify signing** with production keystore
+4. **Review Play Store requirements**
 
-## 🔧 تخصيص الـ Workflows
+### Getting Help
+1. **Check workflow logs** in Actions tab
+2. **Review error messages** in build summary
+3. **Verify configuration** matches requirements
+4. **Contact development team** for support
 
-لتعديل إعدادات الـ workflows:
+## 📈 Performance Optimization
 
-1. **تغيير إصدار Flutter**:
-   ```yaml
-   env:
-     FLUTTER_VERSION: '3.24.5'  # غيّر هنا
-   ```
+### Build Speed
+- **Caching**: Dependencies are cached between builds
+- **Parallel Jobs**: Multiple build types run in parallel
+- **Incremental Builds**: Only changed components are rebuilt
 
-2. **إضافة branches جديدة**:
-   ```yaml
-   on:
-     push:
-       branches: [ main, develop, 'feature/**' ]  # أضف هنا
-   ```
+### APK Size
+- **Split APKs**: Architecture-specific builds reduce size
+- **Code Obfuscation**: Reduces APK size and improves security
+- **Resource Optimization**: Images and assets are optimized
+- **ProGuard**: Removes unused code and resources
 
-3. **تغيير retention period**:
-   ```yaml
-   - uses: actions/upload-artifact@v4
-     with:
-       retention-days: 90  # غيّر هنا
-   ```
+## 🎯 Best Practices
 
-## 📋 Checklist للمطورين
+### Development
+1. **Test locally** before pushing changes
+2. **Use feature branches** for new features
+3. **Write tests** for new functionality
+4. **Review code quality** before merging
 
-عند إضافة تغييرات جديدة، تأكد من:
+### Release Management
+1. **Use semantic versioning** (v1.0.0, v1.1.0, etc.)
+2. **Create release notes** for each version
+3. **Test APKs** before distribution
+4. **Keep release history** for rollback if needed
 
-- [ ] الكود يعمل محلياً
-- [ ] إعدادات admin/1234 محفوظة
-- [ ] التغييرات لا تكسر البناء
-- [ ] الاختبارات تمر بنجاح
-- [ ] الكود مُنسق بطريقة صحيحة
+### Security
+1. **Never commit keystores** to repository
+2. **Use strong passwords** for keystores
+3. **Backup keystores** securely
+4. **Rotate keys** periodically
 
-## 🎯 نصائح لأفضل الممارسات
+## 📞 Support
 
-1. **استخدم تعليقات واضحة** في الـ commits
-2. **اختبر محلياً** قبل Push
-3. **تأكد من المتطلبات** قبل إنشاء PR
-4. **راجع الـ logs** في حالة الفشل
-5. **استخدم التوقيع** للإصدارات الرسمية
+For technical support or questions about the build process:
+
+1. **Check this documentation** first
+2. **Review workflow logs** for specific errors
+3. **Create an issue** in the repository
+4. **Contact the development team**
 
 ---
 
-## 📞 الدعم
+**Last Updated**: $(date)
+**Flutter Version**: 3.24.5
+**Android Target SDK**: 34
 
-إذا واجهت مشاكل مع الـ workflows:
-1. راجع الـ logs المفصلة
-2. تحقق من هذا الدليل
-3. تأكد من إعدادات الـ repository
-4. استخدم GitHub Issues للإبلاغ عن المشاكل
+*This documentation is maintained by the Marina Hotel development team.*
