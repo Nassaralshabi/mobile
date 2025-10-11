@@ -6,7 +6,7 @@ on:
   workflow_dispatch:
 
 env:
-  FLUTTER_VERSION: '3.24.0'
+  FLUTTER_VERSION: '3.24.5'
   JAVA_VERSION: '17'
 
 jobs:
@@ -31,6 +31,9 @@ jobs:
         channel: 'stable'
         cache: true
 
+    - name: Setup Android SDK
+      uses: android-actions/setup-android@v3
+
     - name: Fix Flutter Issues
       working-directory: ./mobile
       run: |
@@ -49,6 +52,7 @@ jobs:
         echo "📦 تحميل التبعيات..."
         flutter clean
         flutter pub get --no-version-check
+        yes | flutter doctor --android-licenses
         echo "✅ تم تحميل التبعيات"
 
     - name: Generate Keystore
