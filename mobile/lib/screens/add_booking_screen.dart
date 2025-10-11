@@ -94,42 +94,27 @@ class _AddBookingScreenState extends State<AddBookingScreen> {
       notes: _notesController.text.trim().isEmpty ? null : _notesController.text.trim(),
     );
 
-    try {
-      final response = await _apiService.addBooking(booking.toJson());
-      
-      setState(() {
-        _isLoading = false;
-      });
+    final success = await _apiService.addBooking(booking.toJson());
 
-      if (response != null && response['success'] == true) {
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('تم إضافة الحجز بنجاح'),
-              backgroundColor: Colors.green,
-            ),
-          );
-          Navigator.pop(context, true);
-        }
-      } else {
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('خطأ في إضافة الحجز'),
-              backgroundColor: Colors.red,
-            ),
-          );
-        }
-      }
-    } catch (e) {
-      setState(() {
-        _isLoading = false;
-      });
-      
+    setState(() {
+      _isLoading = false;
+    });
+
+    if (success) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('خطأ في إضافة الحجز: ${e.toString()}'),
+          const SnackBar(
+            content: Text('تم إضافة الحجز بنجاح'),
+            backgroundColor: Colors.green,
+          ),
+        );
+        Navigator.pop(context, true);
+      }
+    } else {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('خطأ في إضافة الحجز'),
             backgroundColor: Colors.red,
           ),
         );
