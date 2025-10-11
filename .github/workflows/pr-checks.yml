@@ -1,0 +1,243 @@
+name: 🔄 PR Checks
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, ready_for_review]
+    branches: [ main, develop ]
+
+env:
+  FLUTTER_VERSION: '3.24.5'
+  JAVA_VERSION: '17'
+
+jobs:
+  # ====================================
+  # PR Information & Validation
+  # ====================================
+  pr-info:
+    name: 📋 PR Information
+    runs-on: ubuntu-latest
+    if: github.event.pull_request.draft == false
+    
+    steps:
+    - name: 📥 Checkout Repository
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+
+    - name: 📊 PR Analysis
+      id: pr-analysis
+      run: |
+        echo "## 📋 Pull Request Analysis" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "- **Base Branch**: ${{ github.base_ref }}" >> $GITHUB_STEP_SUMMARY
+        echo "- **Head Branch**: ${{ github.head_ref }}" >> $GITHUB_STEP_SUMMARY
+        echo "- **Author**: ${{ github.event.pull_request.user.login }}" >> $GITHUB_STEP_SUMMARY
+        echo "- **Files Changed**: $(git diff --name-only origin/${{ github.base_ref }}...HEAD | wc -l)" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        
+        # Check what type of changes
+        flutter_changed=$(git diff --name-only origin/${{ github.base_ref }}...HEAD | grep -c "mobile/" || true)
+        android_changed=$(git diff --name-only origin/${{ github.base_ref }}...HEAD | grep -c "app-marina/" || true)
+        workflow_changed=$(git diff --name-only origin/${{ github.base_ref }}...HEAD | grep -c ".github/" || true)
+        
+        echo "### 📁 Changed Components" >> $GITHUB_STEP_SUMMARY
+        echo "- Flutter App: $flutter_changed files" >> $GITHUB_STEP_SUMMARY
+        echo "- Android App: $android_changed files" >> $GITHUB_STEP_SUMMARY
+        echo "- Workflows: $workflow_changed files" >> $GITHUB_STEP_SUMMARY
+        
+        # Set outputs for other jobs
+        echo "flutter_changed=$flutter_changed" >> $GITHUB_OUTPUT
+        echo "android_changed=$android_changed" >> $GITHUB_OUTPUT
+
+    outputs:
+      flutter_changed: ${{ steps.pr-analysis.outputs.flutter_changed }}
+      android_changed: ${{ steps.pr-analysis.outputs.android_changed }}
+
+  # ====================================
+  # Quick Build Test
+  # ====================================
+  quick-build:
+    name: ⚡ Quick Build Test
+    runs-on: ubuntu-latest
+    needs: pr-info
+    if: github.event.pull_request.draft == false
+    
+    steps:
+    - name: 📥 Checkout Repository
+      uses: actions/checkout@v4
+
+    - name: ☕ Setup Java
+      uses: actions/setup-java@v4
+      with:
+        distribution: 'temurin'
+        java-version: ${{ env.JAVA_VERSION }}
+
+    - name: 🐦 Setup Flutter
+      if: needs.pr-info.outputs.flutter_changed != '0'
+      uses: subosito/flutter-action@v2
+      with:
+        flutter-version: ${{ env.FLUTTER_VERSION }}
+        channel: 'stable'
+
+    - name: 🤖 Setup Android SDK
+      uses: android-actions/setup-android@v3
+
+    - name: 🎯 Quick Flutter Build
+      if: needs.pr-info.outputs.flutter_changed != '0'
+      working-directory: mobile
+      run: |
+        flutter pub get
+        flutter analyze
+        flutter test
+        echo "Flutter changes build successfully ✅"
+
+    - name: 🤖 Quick Android Build
+      if: needs.pr-info.outputs.android_changed != '0'
+      working-directory: app-marina
+      run: |
+        chmod +x ./gradlew
+        ./gradlew compileDebugSources
+        echo "Android changes compile successfully ✅"
+
+  # ====================================
+  # Code Quality Check
+  # ====================================
+  code-quality:
+    name: 📏 Code Quality
+    runs-on: ubuntu-latest
+    if: github.event.pull_request.draft == false
+    
+    steps:
+    - name: 📥 Checkout Repository
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+
+    - name: 🐦 Setup Flutter
+      uses: subosito/flutter-action@v2
+      with:
+        flutter-version: ${{ env.FLUTTER_VERSION }}
+        channel: 'stable'
+
+    - name: 📏 Flutter Code Analysis
+      working-directory: mobile
+      run: |
+        flutter pub get
+        echo "## 📏 Code Quality Results" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        
+        # Run analysis and capture results
+        if flutter analyze --no-fatal-infos; then
+          echo "- ✅ Flutter analysis passed" >> $GITHUB_STEP_SUMMARY
+        else
+          echo "- ❌ Flutter analysis found issues" >> $GITHUB_STEP_SUMMARY
+        fi
+        
+        # Check formatting
+        if dart format --set-exit-if-changed . >/dev/null 2>&1; then
+          echo "- ✅ Code formatting is correct" >> $GITHUB_STEP_SUMMARY
+        else
+          echo "- ⚠️ Code formatting needs adjustment" >> $GITHUB_STEP_SUMMARY
+        fi
+
+    - name: 🔍 Check Login Configuration in PR
+      run: |
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "### 🔐 Login Configuration Check" >> $GITHUB_STEP_SUMMARY
+        
+        # Check if admin/1234 configuration is preserved
+        if grep -q "admin.*1234" mobile/lib/screens/login_screen.dart 2>/dev/null; then
+          echo "- ✅ Flutter demo credentials preserved" >> $GITHUB_STEP_SUMMARY
+        fi
+        
+        if grep -q "admin.*1234" mobile/lib/services/auth_service.dart 2>/dev/null; then
+          echo "- ✅ Flutter auth fallback preserved" >> $GITHUB_STEP_SUMMARY  
+        fi
+        
+        if grep -q 'android:defaultValue="0L"' app-marina/app/src/main/res/navigation/nav_graph.xml 2>/dev/null; then
+          echo "- ✅ Navigation Safe Args fix preserved" >> $GITHUB_STEP_SUMMARY
+        fi
+
+  # ====================================
+  # PR Auto-Comment
+  # ====================================
+  pr-comment:
+    name: 💬 PR Auto-Comment
+    runs-on: ubuntu-latest
+    needs: [pr-info, quick-build, code-quality]
+    if: always() && github.event.pull_request.draft == false
+    
+    steps:
+    - name: 💬 Comment on PR
+      uses: actions/github-script@v7
+      with:
+        script: |
+          const { owner, repo, number } = context.issue;
+          
+          const buildStatus = '${{ needs.quick-build.result }}' === 'success' ? '✅' : '❌';
+          const qualityStatus = '${{ needs.code-quality.result }}' === 'success' ? '✅' : '❌';
+          
+          const comment = `## 🤖 Automated PR Review
+          
+          ### Build Status
+          ${buildStatus} **Quick Build**: ${{ needs.quick-build.result }}
+          ${qualityStatus} **Code Quality**: ${{ needs.code-quality.result }}
+          
+          ### 📊 Change Summary  
+          - **Flutter files**: ${{ needs.pr-info.outputs.flutter_changed }}
+          - **Android files**: ${{ needs.pr-info.outputs.android_changed }}
+          
+          ### 🔐 Admin Credentials
+          Both apps are configured with:
+          - **Username**: \`admin\`
+          - **Password**: \`1234\`
+          
+          ### 📱 APK Builds
+          Full APK builds will be triggered after merge to main branch.
+          
+          ---
+          *This comment was automatically generated by GitHub Actions*`;
+          
+          await github.rest.issues.createComment({
+            owner,
+            repo,
+            issue_number: number,
+            body: comment
+          });
+
+  # ====================================
+  # PR Label Management
+  # ====================================
+  pr-labeler:
+    name: 🏷️ Auto Label PR
+    runs-on: ubuntu-latest
+    needs: pr-info
+    if: github.event.pull_request.draft == false
+    
+    steps:
+    - name: 🏷️ Add Labels
+      uses: actions/github-script@v7
+      with:
+        script: |
+          const { owner, repo, number } = context.issue;
+          const labels = [];
+          
+          // Add labels based on changed files
+          if ('${{ needs.pr-info.outputs.flutter_changed }}' !== '0') {
+            labels.push('flutter');
+          }
+          if ('${{ needs.pr-info.outputs.android_changed }}' !== '0') {
+            labels.push('android');
+          }
+          
+          // Add enhancement label by default
+          labels.push('enhancement');
+          
+          if (labels.length > 0) {
+            await github.rest.issues.addLabels({
+              owner,
+              repo,
+              issue_number: number,
+              labels: labels
+            });
+          }

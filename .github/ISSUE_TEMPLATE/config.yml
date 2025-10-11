@@ -1,0 +1,17 @@
+blank_issues_enabled: true
+contact_links:
+  - name: 📚 Documentation
+    url: https://github.com/Nassaralshabi/mobile/wiki
+    about: Check the project documentation and guides
+
+  - name: 💬 Discussions
+    url: https://github.com/Nassaralshabi/mobile/discussions
+    about: Ask questions and discuss ideas with the community
+
+  - name: 🚀 GitHub Actions
+    url: https://github.com/Nassaralshabi/mobile/actions
+    about: Check build status and download APK files
+
+  - name: 📥 Latest Release
+    url: https://github.com/Nassaralshabi/mobile/releases/latest
+    about: Download the latest APK files
