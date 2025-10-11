@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
-import '../services/auth_service.dart';
 import '../services/api_service.dart';
 import '../models/expense.dart';
 
@@ -33,8 +32,7 @@ class _ExpensesScreenState extends State<ExpensesScreen> {
   @override
   void initState() {
     super.initState();
-    final authService = Provider.of<AuthService>(context, listen: false);
-    _apiService = ApiService(authService);
+    _apiService = Provider.of<ApiService>(context, listen: false);
     _loadExpenses();
   }
 
@@ -62,6 +60,26 @@ class _ExpensesScreenState extends State<ExpensesScreen> {
         );
       }
     }
+  }
+
+  bool _isSuccessfulResponse(Map<String, dynamic> response) {
+    final successValue = response['success'];
+    if (successValue is bool) {
+      return successValue;
+    }
+    final statusValue = response['status'];
+    if (statusValue is String) {
+      return statusValue.toLowerCase() == 'success';
+    }
+    return response.isNotEmpty;
+  }
+
+  String _extractResponseMessage(Map<String, dynamic> response, String fallback) {
+    final message = response['message'];
+    if (message is String && message.isNotEmpty) {
+      return message;
+    }
+    return fallback;
   }
 
   void _filterExpenses() {
@@ -432,9 +450,12 @@ class _ExpensesScreenState extends State<ExpensesScreen> {
                   addedBy: 'المستخدم الحالي', // TODO: Get from auth service
                 );
 
-                final success = await _apiService.addExpense(expense.toJson());
-                
-                if (mounted) {
+                try {
+                  final response = await _apiService.addExpense(expense.toJson());
+                  final success = _isSuccessfulResponse(response);
+                  final failureMessage = _extractResponseMessage(response, 'خطأ في إضافة المصروف');
+                  
+                  if (!mounted) return;
                   Navigator.pop(context);
                   if (success) {
                     ScaffoldMessenger.of(context).showSnackBar(
@@ -446,12 +467,21 @@ class _ExpensesScreenState extends State<ExpensesScreen> {
                     _loadExpenses();
                   } else {
                     ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text('خطأ في إضافة المصروف'),
+                      SnackBar(
+                        content: Text(failureMessage),
                         backgroundColor: Colors.red,
                       ),
                     );
                   }
+                } catch (e) {
+                  if (!mounted) return;
+                  Navigator.pop(context);
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text('خطأ في إضافة المصروف: $e'),
+                      backgroundColor: Colors.red,
+                    ),
+                  );
                 }
               }
             },

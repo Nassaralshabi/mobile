@@ -6,10 +6,11 @@ import 'api_service.dart';
 import 'auth_service.dart';
 
 class ConnectivityService extends ChangeNotifier {
+  static ConnectivityService? _instance;
+
   final Connectivity _connectivity = Connectivity();
   final DatabaseService _dbService = DatabaseService();
-  final ApiService _apiService;
-  final AuthService _authService;
+  late ApiService _apiService;
   
   bool _isOnline = false;
   bool _isSyncing = false;
@@ -24,8 +25,70 @@ class ConnectivityService extends ChangeNotifier {
   String get syncStatus => _syncStatus;
   DateTime? get lastSyncTime => _lastSyncTime;
 
-  ConnectivityService(this._authService, this._apiService) {
+  factory ConnectivityService({AuthService? authService, ApiService? apiService}) {
+    if (_instance == null) {
+      final resolvedAuth = authService ?? AuthService();
+      final resolvedApi = apiService ?? ApiService(resolvedAuth);
+      _instance = ConnectivityService._internal(resolvedApi);
+    } else if (apiService != null) {
+      _instance!._setApiService(apiService);
+    } else if (authService != null) {
+      _instance!._setApiService(ApiService(authService));
+    }
+    return _instance!;
+  }
+
+  ConnectivityService._internal(ApiService apiService) {
+    _setApiService(apiService);
     _initialize();
+  }
+
+  void _setApiService(ApiService apiService) {
+    _apiService = apiService;
+  }
+
+  bool _isSuccessfulResponse(Map<String, dynamic> response) {
+    if (response.isEmpty) return false;
+    final successValue = response['success'];
+    if (successValue is bool) {
+      return successValue;
+    }
+    final statusValue = response['status'];
+    if (statusValue is String) {
+      return statusValue.toLowerCase() == 'success';
+    }
+    return true;
+  }
+
+  String _responseMessage(Map<String, dynamic> response, String fallback) {
+    final message = response['message'];
+    if (message is String && message.isNotEmpty) {
+      return message;
+    }
+    return fallback;
+  }
+
+  int? _extractIntId(Map<String, dynamic> response, List<String> keys) {
+    for (final key in keys) {
+      final value = response[key];
+      if (value == null) continue;
+      if (value is int) {
+        return value;
+      }
+      if (value is String) {
+        final parsed = int.tryParse(value);
+        if (parsed != null) {
+          return parsed;
+        }
+      }
+    }
+    return null;
+  }
+
+  Future<void> initialize() async {
+    await _connectivitySubscription?.cancel();
+    _syncTimer?.cancel();
+    await _initialize();
   }
 
   Future<void> _initialize() async {
@@ -37,14 +100,12 @@ class ConnectivityService extends ChangeNotifier {
       await _handleConnectivity(result);
     });
 
-    // تشغيل مزامنة دورية كل 30 ثانية عند توفر الإنترنت
     _syncTimer = Timer.periodic(const Duration(seconds: 30), (timer) {
       if (_isOnline && !_isSyncing) {
         syncData();
       }
     });
 
-    // تحميل آخر وقت مزامنة
     final lastSync = await _dbService.getSetting('last_sync');
     if (lastSync != null) {
       _lastSyncTime = DateTime.tryParse(lastSync);
@@ -194,11 +255,15 @@ class ConnectivityService extends ChangeNotifier {
     final booking = bookings.first;
     
     if (action == 'create') {
-      final response = await _apiService.addBooking(booking as Map<String, dynamic>);
+      final response = await _apiService.addBooking(Map<String, dynamic>.from(booking));
+      if (!_isSuccessfulResponse(response)) {
+        throw Exception(_responseMessage(response, 'فشل في مزامنة الحجز'));
+      }
+
+      final serverId = _extractIntId(response, ['booking_id', 'id', 'server_id']);
       
-      // تحديث المعرف من الخادم
       await db.update('bookings', {
-        'server_id': response['booking_id'],
+        if (serverId != null) 'server_id': serverId,
         'is_synced': 1,
       }, where: 'id = ?', whereArgs: [localId]);
     }
@@ -213,18 +278,22 @@ class ConnectivityService extends ChangeNotifier {
     final payment = payments.first;
     
     if (action == 'create') {
-      // الحصول على معرف الحجز من الخادم
       final bookings = await db.query('bookings', where: 'id = ?', whereArgs: [payment['booking_id']]);
       if (bookings.isEmpty || bookings.first['server_id'] == null) {
         throw Exception('الحجز غير متزامن');
       }
       
       final serverBookingId = bookings.first['server_id'];
-      
-      final response = await _apiService.addPayment(payment as Map<String, dynamic>..['booking_id'] = serverBookingId);
+      final payload = Map<String, dynamic>.from(payment)..['booking_id'] = serverBookingId;
+      final response = await _apiService.addPayment(payload);
+      if (!_isSuccessfulResponse(response)) {
+        throw Exception(_responseMessage(response, 'فشل في مزامنة الدفعة'));
+      }
+
+      final paymentId = _extractIntId(response, ['payment_id', 'id', 'server_id']);
       
       await db.update('payments', {
-        'server_id': response['payment_id'],
+        if (paymentId != null) 'server_id': paymentId,
         'server_booking_id': serverBookingId,
         'is_synced': 1,
       }, where: 'id = ?', whereArgs: [localId]);
@@ -240,10 +309,15 @@ class ConnectivityService extends ChangeNotifier {
     final expense = expenses.first;
     
     if (action == 'create') {
-      final response = await _apiService.addExpense(expense as Map<String, dynamic>);
+      final response = await _apiService.addExpense(Map<String, dynamic>.from(expense));
+      if (!_isSuccessfulResponse(response)) {
+        throw Exception(_responseMessage(response, 'فشل في مزامنة المصروف'));
+      }
+
+      final expenseId = _extractIntId(response, ['expense_id', 'id', 'server_id']);
 
       await db.update('expenses', {
-        'server_id': response['expense_id'],
+        if (expenseId != null) 'server_id': expenseId,
         'is_synced': 1,
       }, where: 'id = ?', whereArgs: [localId]);
     }
@@ -258,18 +332,22 @@ class ConnectivityService extends ChangeNotifier {
     final withdrawal = withdrawals.first;
     
     if (action == 'create') {
-      // الحصول على معرف الموظف من الخادم
       final employees = await db.query('employees', where: 'id = ?', whereArgs: [withdrawal['employee_id']]);
       if (employees.isEmpty || employees.first['server_id'] == null) {
         throw Exception('الموظف غير متزامن');
       }
       
       final serverEmployeeId = employees.first['server_id'];
-      
-      final response = await _apiService.addSalaryWithdrawal(withdrawal as Map<String, dynamic>..['employee_id'] = serverEmployeeId);
+      final payload = Map<String, dynamic>.from(withdrawal)..['employee_id'] = serverEmployeeId;
+      final response = await _apiService.addSalaryWithdrawal(payload);
+      if (!_isSuccessfulResponse(response)) {
+        throw Exception(_responseMessage(response, 'فشل في مزامنة سحب الراتب'));
+      }
+
+      final withdrawalId = _extractIntId(response, ['withdrawal_id', 'id', 'server_id']);
       
       await db.update('salary_withdrawals', {
-        'server_id': response['withdrawal_id'],
+        if (withdrawalId != null) 'server_id': withdrawalId,
         'server_employee_id': serverEmployeeId,
         'is_synced': 1,
       }, where: 'id = ?', whereArgs: [localId]);

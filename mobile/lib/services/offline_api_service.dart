@@ -17,6 +17,43 @@ class OfflineApiService {
     _apiService = ApiService(_authService);
   }
 
+  bool _isSuccessfulResponse(Map<String, dynamic> response) {
+    final successValue = response['success'];
+    if (successValue is bool) {
+      return successValue;
+    }
+    final statusValue = response['status'];
+    if (statusValue is String) {
+      return statusValue.toLowerCase() == 'success';
+    }
+    return response.isNotEmpty;
+  }
+
+  String _extractResponseMessage(Map<String, dynamic> response, String fallback) {
+    final message = response['message'];
+    if (message is String && message.isNotEmpty) {
+      return message;
+    }
+    return fallback;
+  }
+
+  int? _extractIntId(Map<String, dynamic> response, List<String> keys) {
+    for (final key in keys) {
+      final value = response[key];
+      if (value == null) continue;
+      if (value is int) {
+        return value;
+      }
+      if (value is String) {
+        final parsed = int.tryParse(value);
+        if (parsed != null) {
+          return parsed;
+        }
+      }
+    }
+    return null;
+  }
+
   // Bookings
   Future<List<Map<String, dynamic>>> getBookings() async {
     if (_connectivityService.isOnline) {
@@ -39,20 +76,22 @@ class OfflineApiService {
 
   Future<bool> addBooking(Map<String, dynamic> bookingData) async {
     try {
-      // إضافة إلى قاعدة البيانات المحلية أولاً
       final localId = await _dbService.insertBooking(bookingData);
       
       if (_connectivityService.isOnline) {
         try {
-          // محاولة الرفع للخادم فوراً
-          final success = await _apiService.addBooking(bookingData);
+          final response = await _apiService.addBooking(bookingData);
+          final success = _isSuccessfulResponse(response);
           if (success) {
-            // تحديث حالة المزامنة
             final db = await _dbService.database;
+            final serverId = _extractIntId(response, ['booking_id', 'id', 'server_id']);
             await db.update('bookings', {
+              if (serverId != null) 'server_id': serverId,
               'is_synced': 1,
               'sync_action': 'synced',
             }, where: 'id = ?', whereArgs: [localId]);
+          } else if (kDebugMode) {
+            print("Failed to sync booking immediately: ${_extractResponseMessage(response, 'خطأ غير معروف')}");
           }
           return success;
         } catch (e) {
@@ -64,7 +103,6 @@ class OfflineApiService {
         }
       }
       
-      // في الوضع غير المتصل، الحفظ المحلي يعتبر نجاحاً
       return true;
     } catch (e) {
       if (kDebugMode) {
@@ -81,16 +119,13 @@ class OfflineApiService {
       
       if (_connectivityService.isOnline) {
         try {
-          // محاولة التحديث على الخادم
-          final success = await _apiService.updateBooking(id, bookingData);
-          if (success) {
-            final db = await _dbService.database;
-            await db.update('bookings', {
-              'is_synced': 1,
-              'sync_action': 'synced',
-            }, where: 'id = ?', whereArgs: [id]);
-          }
-          return success;
+          await _apiService.updateBooking(id, bookingData);
+          final db = await _dbService.database;
+          await db.update('bookings', {
+            'is_synced': 1,
+            'sync_action': 'synced',
+          }, where: 'id = ?', whereArgs: [id]);
+          return true;
         } catch (e) {
           if (kDebugMode) {
             print('Failed to sync booking update: $e');
@@ -193,12 +228,17 @@ class OfflineApiService {
       
       if (_connectivityService.isOnline) {
         try {
-          final success = await _apiService.addPayment(paymentData);
+          final response = await _apiService.addPayment(paymentData);
+          final success = _isSuccessfulResponse(response);
           if (success) {
             final db = await _dbService.database;
+            final paymentId = _extractIntId(response, ['payment_id', 'id', 'server_id']);
             await db.update('payments', {
+              if (paymentId != null) 'server_id': paymentId,
               'is_synced': 1,
             }, where: 'id = ?', whereArgs: [localId]);
+          } else if (kDebugMode) {
+            print("Failed to sync payment: ${_extractResponseMessage(response, 'خطأ غير معروف')}");
           }
           return success;
         } catch (e) {
@@ -241,12 +281,17 @@ class OfflineApiService {
       
       if (_connectivityService.isOnline) {
         try {
-          final success = await _apiService.addExpense(expenseData);
+          final response = await _apiService.addExpense(expenseData);
+          final success = _isSuccessfulResponse(response);
           if (success) {
             final db = await _dbService.database;
+            final expenseId = _extractIntId(response, ['expense_id', 'id', 'server_id']);
             await db.update('expenses', {
+              if (expenseId != null) 'server_id': expenseId,
               'is_synced': 1,
             }, where: 'id = ?', whereArgs: [localId]);
+          } else if (kDebugMode) {
+            print("Failed to sync expense: ${_extractResponseMessage(response, 'خطأ غير معروف')}");
           }
           return success;
         } catch (e) {
@@ -322,12 +367,17 @@ class OfflineApiService {
       
       if (_connectivityService.isOnline) {
         try {
-          final success = await _apiService.addSalaryWithdrawal(withdrawalData);
+          final response = await _apiService.addSalaryWithdrawal(withdrawalData);
+          final success = _isSuccessfulResponse(response);
           if (success) {
             final db = await _dbService.database;
+            final withdrawalId = _extractIntId(response, ['withdrawal_id', 'id', 'server_id']);
             await db.update('salary_withdrawals', {
+              if (withdrawalId != null) 'server_id': withdrawalId,
               'is_synced': 1,
             }, where: 'id = ?', whereArgs: [localId]);
+          } else if (kDebugMode) {
+            print("Failed to sync salary withdrawal: ${_extractResponseMessage(response, 'خطأ غير معروف')}");
           }
           return success;
         } catch (e) {

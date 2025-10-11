@@ -2,6 +2,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'services/auth_service.dart';
+import 'services/api_service.dart';
 import 'services/connectivity_service.dart';
 import 'services/database_service.dart';
 import 'services/notification_service.dart';
@@ -13,39 +14,53 @@ void main() async {
 
   // Initialize local database
   final databaseService = DatabaseService();
-  await databaseService.database; // Ensure database is created
+  await databaseService.database;
 
-  // Initialize connectivity service
-  final connectivityService = ConnectivityService();
-  await connectivityService.initialize();
+  // Prepare shared services
+  final authService = AuthService();
+  final apiService = ApiService(authService);
+  final connectivityService = ConnectivityService(
+    authService: authService,
+    apiService: apiService,
+  );
 
-  // Initialize notification service
   final notificationService = NotificationService();
   await notificationService.initialize();
 
   runApp(MyApp(
+    authService: authService,
+    apiService: apiService,
     connectivityService: connectivityService,
     notificationService: notificationService,
+    databaseService: databaseService,
   ));
 }
 
 class MyApp extends StatelessWidget {
+  final AuthService authService;
+  final ApiService apiService;
   final ConnectivityService connectivityService;
   final NotificationService notificationService;
+  final DatabaseService databaseService;
 
   const MyApp({
     super.key,
+    required this.authService,
+    required this.apiService,
     required this.connectivityService,
     required this.notificationService,
+    required this.databaseService,
   });
 
   @override
   Widget build(BuildContext context) {
     return MultiProvider(
       providers: [
-        ChangeNotifierProvider(create: (_) => AuthService()),
+        ChangeNotifierProvider.value(value: authService),
+        Provider<ApiService>.value(value: apiService),
         ChangeNotifierProvider.value(value: connectivityService),
-        Provider.value(value: notificationService),
+        Provider<NotificationService>.value(value: notificationService),
+        Provider<DatabaseService>.value(value: databaseService),
       ],
       child: MaterialApp(
         title: 'Marina Hotel',

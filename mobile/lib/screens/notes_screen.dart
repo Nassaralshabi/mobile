@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
-import '../services/auth_service.dart';
 import '../services/api_service.dart';
 
 class NotesScreen extends StatefulWidget {
@@ -21,9 +20,28 @@ class _NotesScreenState extends State<NotesScreen> {
   @override
   void initState() {
     super.initState();
-    final authService = Provider.of<AuthService>(context, listen: false);
-    _apiService = ApiService(authService);
+    _apiService = Provider.of<ApiService>(context, listen: false);
     _loadNotes();
+  }
+
+  bool _isSuccessfulResponse(Map<String, dynamic> response) {
+    final successValue = response['success'];
+    if (successValue is bool) {
+      return successValue;
+    }
+    final statusValue = response['status'];
+    if (statusValue is String) {
+      return statusValue.toLowerCase() == 'success';
+    }
+    return response.isNotEmpty;
+  }
+
+  String _extractResponseMessage(Map<String, dynamic> response, String fallback) {
+    final message = response['message'];
+    if (message is String && message.isNotEmpty) {
+      return message;
+    }
+    return fallback;
   }
 
   Future<void> _loadNotes() async {
@@ -396,9 +414,15 @@ class _NotesScreenState extends State<NotesScreen> {
                   noteData['id'] = note['id'];
                 }
 
-                final success = await _apiService.addNote(noteData);
-                
-                if (mounted) {
+                try {
+                  final response = await _apiService.addNote(noteData);
+                  final success = _isSuccessfulResponse(response);
+                  final failureMessage = _extractResponseMessage(
+                    response,
+                    isEditing ? 'خطأ في تعديل الملاحظة' : 'خطأ في إضافة الملاحظة',
+                  );
+                  
+                  if (!mounted) return;
                   Navigator.pop(context);
                   if (success) {
                     ScaffoldMessenger.of(context).showSnackBar(
@@ -411,11 +435,20 @@ class _NotesScreenState extends State<NotesScreen> {
                   } else {
                     ScaffoldMessenger.of(context).showSnackBar(
                       SnackBar(
-                        content: Text(isEditing ? 'خطأ في تعديل الملاحظة' : 'خطأ في إضافة الملاحظة'),
+                        content: Text(failureMessage),
                         backgroundColor: Colors.red,
                       ),
                     );
                   }
+                } catch (e) {
+                  if (!mounted) return;
+                  Navigator.pop(context);
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text(isEditing ? 'خطأ في تعديل الملاحظة: $e' : 'خطأ في إضافة الملاحظة: $e'),
+                      backgroundColor: Colors.red,
+                    ),
+                  );
                 }
               }
             },

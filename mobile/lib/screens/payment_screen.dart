@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
-import '../services/auth_service.dart';
 import '../services/api_service.dart';
 import '../models/booking.dart';
 import '../models/payment.dart';
@@ -24,9 +23,28 @@ class _PaymentScreenState extends State<PaymentScreen> {
   @override
   void initState() {
     super.initState();
-    final authService = Provider.of<AuthService>(context, listen: false);
-    _apiService = ApiService(authService);
+    _apiService = Provider.of<ApiService>(context, listen: false);
     _loadPayments();
+  }
+
+  bool _isSuccessfulResponse(Map<String, dynamic> response) {
+    final successValue = response['success'];
+    if (successValue is bool) {
+      return successValue;
+    }
+    final statusValue = response['status'];
+    if (statusValue is String) {
+      return statusValue.toLowerCase() == 'success';
+    }
+    return response.isNotEmpty;
+  }
+
+  String _extractResponseMessage(Map<String, dynamic> response, String fallback) {
+    final message = response['message'];
+    if (message is String && message.isNotEmpty) {
+      return message;
+    }
+    return fallback;
   }
 
   Future<void> _loadPayments() async {
@@ -439,10 +457,14 @@ class _PaymentScreenState extends State<PaymentScreen> {
                       : descriptionController.text.trim(),
                 );
 
-                final success = await _apiService.addPayment(payment.toJson());
-                
-                if (mounted) {
+                try {
+                  final response = await _apiService.addPayment(payment.toJson());
+                  final success = _isSuccessfulResponse(response);
+                  final failureMessage = _extractResponseMessage(response, 'خطأ في إضافة الدفعة');
+
+                  if (!mounted) return;
                   Navigator.pop(context);
+
                   if (success) {
                     ScaffoldMessenger.of(context).showSnackBar(
                       const SnackBar(
@@ -453,12 +475,21 @@ class _PaymentScreenState extends State<PaymentScreen> {
                     _loadPayments();
                   } else {
                     ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text('خطأ في إضافة الدفعة'),
+                      SnackBar(
+                        content: Text(failureMessage),
                         backgroundColor: Colors.red,
                       ),
                     );
                   }
+                } catch (e) {
+                  if (!mounted) return;
+                  Navigator.pop(context);
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text('خطأ في إضافة الدفعة: $e'),
+                      backgroundColor: Colors.red,
+                    ),
+                  );
                 }
               }
             },

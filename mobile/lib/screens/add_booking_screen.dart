@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
-import '../services/auth_service.dart';
 import '../services/api_service.dart';
 import '../models/booking.dart';
 
@@ -34,8 +33,7 @@ class _AddBookingScreenState extends State<AddBookingScreen> {
   @override
   void initState() {
     super.initState();
-    final authService = Provider.of<AuthService>(context, listen: false);
-    _apiService = ApiService(authService);
+    _apiService = Provider.of<ApiService>(context, listen: false);
   }
 
   @override
@@ -73,6 +71,26 @@ class _AddBookingScreenState extends State<AddBookingScreen> {
     }
   }
 
+  bool _isSuccessfulResponse(Map<String, dynamic> response) {
+    final successValue = response['success'];
+    if (successValue is bool) {
+      return successValue;
+    }
+    final statusValue = response['status'];
+    if (statusValue is String) {
+      return statusValue.toLowerCase() == 'success';
+    }
+    return response.isNotEmpty;
+  }
+
+  String _extractResponseMessage(Map<String, dynamic> response, String fallback) {
+    final message = response['message'];
+    if (message is String && message.isNotEmpty) {
+      return message;
+    }
+    return fallback;
+  }
+
   Future<void> _saveBooking() async {
     if (!_formKey.currentState!.validate()) return;
 
@@ -94,14 +112,18 @@ class _AddBookingScreenState extends State<AddBookingScreen> {
       notes: _notesController.text.trim().isEmpty ? null : _notesController.text.trim(),
     );
 
-    final success = await _apiService.addBooking(booking.toJson());
+    try {
+      final response = await _apiService.addBooking(booking.toJson());
+      final success = _isSuccessfulResponse(response);
+      final failureMessage = _extractResponseMessage(response, 'خطأ في إضافة الحجز');
 
-    setState(() {
-      _isLoading = false;
-    });
+      setState(() {
+        _isLoading = false;
+      });
 
-    if (success) {
-      if (mounted) {
+      if (!mounted) return;
+
+      if (success) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text('تم إضافة الحجز بنجاح'),
@@ -109,16 +131,27 @@ class _AddBookingScreenState extends State<AddBookingScreen> {
           ),
         );
         Navigator.pop(context, true);
-      }
-    } else {
-      if (mounted) {
+      } else {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('خطأ في إضافة الحجز'),
+          SnackBar(
+            content: Text(failureMessage),
             backgroundColor: Colors.red,
           ),
         );
       }
+    } catch (e) {
+      setState(() {
+        _isLoading = false;
+      });
+
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('خطأ في إضافة الحجز: $e'),
+          backgroundColor: Colors.red,
+        ),
+      );
     }
   }
 
