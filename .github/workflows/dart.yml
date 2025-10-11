@@ -16,7 +16,7 @@ on:
   workflow_dispatch:
 
 env:
-  FLUTTER_VERSION: '3.24.5'
+  FLUTTER_VERSION: '3.24.0'
   JAVA_VERSION: '17'
 
 jobs:
@@ -37,7 +37,7 @@ jobs:
           java-version: ${{ env.JAVA_VERSION }}
 
       - name: 📦 Cache Flutter SDK
-        uses: actions/cache@v4
+        uses: actions/cache@v3
         with:
           path: |
             ~/.pub-cache
@@ -53,9 +53,6 @@ jobs:
           channel: 'stable'
           cache: true
 
-      - name: 🤖 Setup Android SDK
-        uses: android-actions/setup-android@v3
-
       - name: ✅ Verify Flutter Installation
         run: |
           flutter --version
@@ -66,7 +63,6 @@ jobs:
         run: |
           echo "📥 Downloading Flutter packages..."
           flutter pub get
-          yes | flutter doctor --android-licenses
           echo "✅ Dependencies installed successfully"
 
       - name: 🎨 Verify Code Formatting
