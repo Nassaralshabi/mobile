@@ -31,8 +31,8 @@ class ApiService {
     return List<Map<String, dynamic>>.from(data['bookings'] ?? []);
   }
 
-  Future<Map<String, dynamic>> addBooking(Map<String, dynamic> bookingData) async {
-    return await _apiClient.post(_bookingsEndpoint, bookingData);
+  Future<void> addBooking(Map<String, dynamic> bookingData) async {
+    await _apiClient.post(_bookingsEndpoint, bookingData);
   }
 
   Future<void> updateBooking(int bookingId, Map<String, dynamic> bookingData) async {
@@ -56,8 +56,8 @@ class ApiService {
     return List<Map<String, dynamic>>.from(data['expenses'] ?? []);
   }
 
-  Future<Map<String, dynamic>> addExpense(Map<String, dynamic> expenseData) async {
-    return await _apiClient.post(_expensesEndpoint, expenseData);
+  Future<void> addExpense(Map<String, dynamic> expenseData) async {
+    await _apiClient.post(_expensesEndpoint, expenseData);
   }
 
   // Notes API
@@ -80,8 +80,8 @@ class ApiService {
     return List<Map<String, dynamic>>.from(data['payments'] ?? []);
   }
 
-  Future<Map<String, dynamic>> addPayment(Map<String, dynamic> paymentData) async {
-    return await _apiClient.post(_paymentsEndpoint, paymentData);
+  Future<void> addPayment(Map<String, dynamic> paymentData) async {
+    await _apiClient.post(_paymentsEndpoint, paymentData);
   }
 
   // Booking Notes API
@@ -115,7 +115,7 @@ class ApiService {
     return List<Map<String, dynamic>>.from(data['withdrawals'] ?? []);
   }
 
-  Future<Map<String, dynamic>> addSalaryWithdrawal(Map<String, dynamic> withdrawalData) async {
-    return await _apiClient.post(_salaryWithdrawalsEndpoint, withdrawalData);
+  Future<void> addSalaryWithdrawal(Map<String, dynamic> withdrawalData) async {
+    await _apiClient.post(_salaryWithdrawalsEndpoint, withdrawalData);
   }
 }

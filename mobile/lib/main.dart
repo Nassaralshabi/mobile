@@ -2,7 +2,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'services/auth_service.dart';
-import 'services/api_service.dart';
 import 'services/connectivity_service.dart';
 import 'services/database_service.dart';
 import 'services/notification_service.dart';
@@ -16,14 +15,9 @@ void main() async {
   final databaseService = DatabaseService();
   await databaseService.database; // Ensure database is created
 
-  // Initialize auth service
-  final authService = AuthService();
-  
-  // Initialize API service
-  final apiService = ApiService(authService);
-
   // Initialize connectivity service
-  final connectivityService = ConnectivityService(authService, apiService);
+  final connectivityService = ConnectivityService();
+  await connectivityService.initialize();
 
   // Initialize notification service
   final notificationService = NotificationService();
@@ -32,32 +26,25 @@ void main() async {
   runApp(MyApp(
     connectivityService: connectivityService,
     notificationService: notificationService,
-    authService: authService,
-    apiService: apiService,
   ));
 }
 
 class MyApp extends StatelessWidget {
   final ConnectivityService connectivityService;
   final NotificationService notificationService;
-  final AuthService authService;
-  final ApiService apiService;
 
   const MyApp({
     super.key,
     required this.connectivityService,
     required this.notificationService,
-    required this.authService,
-    required this.apiService,
   });
 
   @override
   Widget build(BuildContext context) {
     return MultiProvider(
       providers: [
-        ChangeNotifierProvider.value(value: authService),
+        ChangeNotifierProvider(create: (_) => AuthService()),
         ChangeNotifierProvider.value(value: connectivityService),
-        Provider.value(value: apiService),
         Provider.value(value: notificationService),
       ],
       child: MaterialApp(
